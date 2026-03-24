@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}현재 냉장고 | 오늘 냉장고{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="sectionHeader">
+      <div>
+        <h1 class="sectionTitle">현재 냉장고</h1>
+        <p class="sectionDesc">보유 식재료를 추가하고 유통기한을 관리하세요.</p>
+      </div>
+    </div>
+
+    <div class="metricGrid section">
+      <div class="card metricCard">
+        <div class="metricLabel">전체 재료</div>
+        <div class="metricValue">{{ fridgeSummary.totalCount or 0 }}</div>
+      </div>
+      <div class="card metricCard">
+        <div class="metricLabel">임박 재료</div>
+        <div class="metricValue">{{ fridgeSummary.expiringCount or 0 }}</div>
+      </div>
+      <div class="card metricCard">
+        <div class="metricLabel">추천 가능 메뉴</div>
+        <div class="metricValue">{{ fridgeSummary.recommendCount or 0 }}</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <section class="card">
+        <div class="cardBody">
+          <div class="sectionHeader">
+            <div>
+              <h2 class="sectionTitle">재료 추가</h2>
+              <p class="sectionDesc">재료명과 유통기한만 입력하세요.</p>
+            </div>
+          </div>
+
+          <form action="{{ url_for('addIngredient') }}" method="post">
+            <div class="formGroup">
+              <label for="ingredientName" class="formLabel">재료명</label>
+              <input
+                type="text"
+                id="ingredientName"
+                name="ingredientName"
+                class="input"
+                placeholder="예: 계란, 두부, 양파"
+                required
+              />
+            </div>
+
+            <div class="formGroup">
+              <label for="expireDate" class="formLabel">유통기한</label>
+              <input type="date" id="expireDate" name="expireDate" class="input" required />
+            </div>
+
+            <div class="formGroup">
+              <span class="formLabel">빠른 추가</span>
+              <div class="tagList">
+                <span class="tag">계란</span>
+                <span class="tag">두부</span>
+                <span class="tag">양파</span>
+                <span class="tag">대파</span>
+                <span class="tag">우유</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btnPrimary">재료 추가</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardBody">
+          <div class="sectionHeader">
+            <div>
+              <h2 class="sectionTitle">보유 재료 목록</h2>
+              <p class="sectionDesc">유통기한이 가까운 재료를 먼저 확인하세요.</p>
+            </div>
+          </div>
+
+          <div class="list">
+            {% for ingredient in ingredients %}
+            <div class="listItem">
+              <div class="listItemMain">
+                <strong>{{ ingredient.ingredientName }}</strong>
+                <span class="listItemSub">
+                  유통기한: {{ ingredient.expireDate }}
+                  {% if ingredient.normalizedName %}
+                    · 표준명: {{ ingredient.normalizedName }}
+                  {% endif %}
+                </span>
+              </div>
+
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                {% if ingredient.daysLeft is not none and ingredient.daysLeft < 0 %}
+                  <span class="tag tagDanger">기한 경과</span>
+                {% elif ingredient.daysLeft is not none and ingredient.daysLeft <= 3 %}
+                  <span class="tag tagWarning">임박</span>
+                {% else %}
+                  <span class="tag tagSuccess">안전</span>
+                {% endif %}
+
+                <form action="{{ url_for('deleteIngredient', id=ingredient.id) }}" method="post">
+                  <button type="submit" class="btn btnGhost">삭제</button>
+                </form>
+              </div>
+            </div>
+            {% else %}
+            <div class="emptyState">등록된 재료가 없습니다.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}
