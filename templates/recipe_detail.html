@@ -9,26 +9,26 @@
     </div>
 
     <div class="card detailSummary">
-      <span class="heroEyebrow">레시피 상세</span>
+      <span class="heroEyebrow">{{ recipe.category }} | {{ recipe.method }}</span>
       <h1 class="heroTitle" style="font-size: 34px;">{{ recipe.recipeName }}</h1>
-      <p class="heroText">{{ recipe.description }}</p>
+      <p class="heroText">상세 레시피 정보를 확인하세요.</p>
 
       <div class="infoGrid">
         <div class="infoBox">
-          <div class="infoLabel">조리 시간</div>
-          <div class="infoValue">{{ recipe.cookTime }}분</div>
+          <div class="infoLabel">열량</div>
+          <div class="infoValue">{{ recipe.nutrition.calories }} kcal</div>
         </div>
         <div class="infoBox">
-          <div class="infoLabel">칼로리</div>
-          <div class="infoValue">{{ recipe.calories }} kcal</div>
+          <div class="infoLabel">중량</div>
+          <div class="infoValue">일인분 기준</div>
         </div>
         <div class="infoBox">
-          <div class="infoLabel">기준 인분</div>
-          <div class="infoValue">{{ recipe.servingSize }}인분</div>
+          <div class="infoLabel">조리 방식</div>
+          <div class="infoValue">{{ recipe.method }}</div>
         </div>
         <div class="infoBox">
-          <div class="infoLabel">일치율</div>
-          <div class="infoValue">{{ recipe.matchPercent }}%</div>
+          <div class="infoLabel">분류</div>
+          <div class="infoValue">{{ recipe.category }}</div>
         </div>
       </div>
 
@@ -49,25 +49,16 @@
         <div class="sectionHeader">
           <div>
             <h2 class="sectionTitle">재료</h2>
-            <p class="sectionDesc">보유 여부와 부족 재료를 함께 확인합니다.</p>
+            <p class="sectionDesc">레시피에 필요한 주재료와 부재료입니다.</p>
           </div>
         </div>
 
         <div class="list">
-          {% for ingredient in recipe.ingredients %}
           <div class="listItem">
             <div class="listItemMain">
-              <strong>{{ ingredient.name }}</strong>
-              <span class="listItemSub">{{ ingredient.amount }}</span>
+              <span class="listItemSub">{{ recipe.ingredientsText }}</span>
             </div>
-
-            {% if ingredient.isOwned %}
-              <span class="tag tagSuccess">보유</span>
-            {% else %}
-              <span class="tag tagWarning">부족</span>
-            {% endif %}
           </div>
-          {% endfor %}
         </div>
       </div>
     </section>
@@ -76,8 +67,8 @@
       <div class="cardBody">
         <div class="sectionHeader">
           <div>
-            <h2 class="sectionTitle">영양 정보 / 환산</h2>
-            <p class="sectionDesc">1인분 기준으로 빠르게 확인합니다.</p>
+            <h2 class="sectionTitle">영양 정보</h2>
+            <p class="sectionDesc">1인분 기준 상세 영양소입니다.</p>
           </div>
         </div>
 
@@ -85,29 +76,27 @@
           <div class="listItem">
             <div class="listItemMain">
               <strong>탄수화물</strong>
-              <span class="listItemSub">{{ recipe.nutrition.carbohydrate }}</span>
+              <span class="listItemSub">{{ recipe.nutrition.carbohydrate }}g</span>
             </div>
           </div>
           <div class="listItem">
             <div class="listItemMain">
               <strong>단백질</strong>
-              <span class="listItemSub">{{ recipe.nutrition.protein }}</span>
+              <span class="listItemSub">{{ recipe.nutrition.protein }}g</span>
             </div>
           </div>
           <div class="listItem">
             <div class="listItemMain">
               <strong>지방</strong>
-              <span class="listItemSub">{{ recipe.nutrition.fat }}</span>
+              <span class="listItemSub">{{ recipe.nutrition.fat }}g</span>
             </div>
           </div>
-        </div>
-
-        <div style="margin-top: 20px;">
-          <div class="formGroup">
-            <label for="targetServing" class="formLabel">목표 인분</label>
-            <input type="number" id="targetServing" name="targetServing" class="input" min="1" value="1">
+          <div class="listItem">
+            <div class="listItemMain">
+              <strong>나트륨</strong>
+              <span class="listItemSub">{{ recipe.nutrition.sodium }}mg</span>
+            </div>
           </div>
-          <button type="button" class="btn btnGhost">재료량 다시 계산</button>
         </div>
       </div>
     </section>
@@ -121,25 +110,29 @@
         <div class="sectionHeader">
           <div>
             <h2 class="sectionTitle">조리 순서</h2>
-            <p class="sectionDesc">단계별 이미지와 설명</p>
+            <p class="sectionDesc">단계별 이미지와 자세한 설명</p>
           </div>
         </div>
 
         <div class="stepList">
           {% for step in recipe.steps %}
           <article class="stepCard">
-            <div>
-              <div class="stepNumber">{{ loop.index }}</div>
+            <div class="stepNumCol">
+              <div class="stepNumber">{{ step.stepNumber }}</div>
             </div>
-            <div>
-              <h3 style="margin-top:0;">{{ step.title }}</h3>
-              <p class="sectionDesc" style="margin-top: 8px;">{{ step.description }}</p>
-
+            <div class="stepMain">
               {% if step.imageUrl %}
-                <div style="margin-top: 14px; border-radius: 16px; overflow: hidden;">
-                  <img src="{{ step.imageUrl }}" alt="조리 단계 {{ loop.index }}">
-                </div>
+              <div class="stepImagePart">
+                <img src="{{ step.imageUrl }}" alt="조리 단계 {{ step.stepNumber }}"
+                  style="border-radius: var(--radiusMd); width: 100%; object-fit: cover;">
+              </div>
               {% endif %}
+              <div class="stepTextPart">
+                <p class="sectionDesc"
+                  style="margin-top: 0; font-size: 1.1rem; color: var(--colorText); line-height: 1.6;">
+                  {{ step.description }}
+                </p>
+              </div>
             </div>
           </article>
           {% endfor %}

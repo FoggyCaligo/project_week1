@@ -17,8 +17,16 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
+from db import Database
+from repository.recipeDetailRepository import RecipeDetailRepository
+from service.recipeDetailService import RecipeDetailService
+
 
 app = Flask(__name__)
+# Initialize DB, Repository and Service
+db_instance = Database()
+recipe_repo = RecipeDetailRepository(db_instance)
+recipe_service = RecipeDetailService(recipe_repo)
 app.config["SECRET_KEY"] = "change-this-secret-key"
 app.config["UPLOAD_FOLDER"] = str(Path("static") / "uploads")
 
@@ -46,154 +54,7 @@ ingredientAliasMap = {
 }
 
 
-recipeCatalog = [
-    {
-        "recipeID": "R001",
-        "recipeName": "계란볶음밥",
-        "description": "남은 밥과 계란으로 빠르게 만들 수 있는 기본 볶음밥입니다.",
-        "imageUrl": "https://placehold.co/800x500?text=Egg+Fried+Rice",
-        "cookTime": 15,
-        "calories": 520,
-        "servingSize": 1,
-        "nutrition": {
-            "carbohydrate": "63g",
-            "protein": "18g",
-            "fat": "19g",
-        },
-        "ingredients": [
-            {"name": "밥", "amount": "1공기"},
-            {"name": "계란", "amount": "2개"},
-            {"name": "대파", "amount": "1/2대"},
-            {"name": "간장", "amount": "1큰술"},
-        ],
-        "steps": [
-            {
-                "title": "재료 준비",
-                "description": "대파를 송송 썰고 계란은 풀어둡니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "계란 스크램블",
-                "description": "팬에 계란을 먼저 볶아 반쯤 익힌 뒤 덜어둡니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "밥과 함께 볶기",
-                "description": "대파를 볶다가 밥, 계란, 간장을 넣고 고르게 볶습니다.",
-                "imageUrl": "",
-            },
-        ],
-    },
-    {
-        "recipeID": "R002",
-        "recipeName": "김치찌개",
-        "description": "김치와 돼지고기만 있어도 깊은 맛을 낼 수 있는 기본 찌개입니다.",
-        "imageUrl": "https://placehold.co/800x500?text=Kimchi+Stew",
-        "cookTime": 25,
-        "calories": 430,
-        "servingSize": 2,
-        "nutrition": {
-            "carbohydrate": "16g",
-            "protein": "28g",
-            "fat": "24g",
-        },
-        "ingredients": [
-            {"name": "김치", "amount": "2컵"},
-            {"name": "돼지고기", "amount": "150g"},
-            {"name": "두부", "amount": "1/2모"},
-            {"name": "대파", "amount": "1/2대"},
-        ],
-        "steps": [
-            {
-                "title": "재료 볶기",
-                "description": "김치와 돼지고기를 먼저 살짝 볶습니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "끓이기",
-                "description": "물을 붓고 충분히 끓여 국물 맛을 냅니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "두부 넣기",
-                "description": "두부와 대파를 넣고 5분 정도 더 끓입니다.",
-                "imageUrl": "",
-            },
-        ],
-    },
-    {
-        "recipeID": "R003",
-        "recipeName": "두부부침",
-        "description": "간단하지만 반찬으로 좋은 기본 두부 요리입니다.",
-        "imageUrl": "https://placehold.co/800x500?text=Tofu+Steak",
-        "cookTime": 10,
-        "calories": 260,
-        "servingSize": 1,
-        "nutrition": {
-            "carbohydrate": "8g",
-            "protein": "18g",
-            "fat": "15g",
-        },
-        "ingredients": [
-            {"name": "두부", "amount": "1모"},
-            {"name": "간장", "amount": "1큰술"},
-            {"name": "대파", "amount": "약간"},
-        ],
-        "steps": [
-            {
-                "title": "두부 물기 제거",
-                "description": "키친타월로 두부의 물기를 닦습니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "노릇하게 굽기",
-                "description": "팬에 두부를 앞뒤로 노릇하게 굽습니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "양념 곁들이기",
-                "description": "간장과 대파를 곁들여 마무리합니다.",
-                "imageUrl": "",
-            },
-        ],
-    },
-    {
-        "recipeID": "R004",
-        "recipeName": "감자양파볶음",
-        "description": "감자와 양파만으로도 만들 수 있는 쉬운 반찬입니다.",
-        "imageUrl": "https://placehold.co/800x500?text=Potato+Stir+Fry",
-        "cookTime": 18,
-        "calories": 210,
-        "servingSize": 2,
-        "nutrition": {
-            "carbohydrate": "34g",
-            "protein": "4g",
-            "fat": "6g",
-        },
-        "ingredients": [
-            {"name": "감자", "amount": "2개"},
-            {"name": "양파", "amount": "1/2개"},
-            {"name": "대파", "amount": "약간"},
-        ],
-        "steps": [
-            {
-                "title": "채썰기",
-                "description": "감자와 양파를 얇게 채썹니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "감자 익히기",
-                "description": "감자를 먼저 볶아 반쯤 익힙니다.",
-                "imageUrl": "",
-            },
-            {
-                "title": "양파 넣고 마무리",
-                "description": "양파와 대파를 넣고 숨이 죽을 때까지 볶습니다.",
-                "imageUrl": "",
-            },
-        ],
-    },
-]
+recipeCatalog = []
 
 
 users = []
@@ -527,7 +388,7 @@ def home():
 
     if currentUser:
         summary = buildHomeSummary(currentUser["id"])
-        todayRecipes = buildRecommendedRecipeList(currentUser["id"])[:3]
+        todayRecipes = recipe_service.get_recipe_list(limit=10)
         expiringIngredients = getUserIngredientList(currentUser["id"])[:5]
     else:
         summary = {
@@ -535,7 +396,7 @@ def home():
             "expiringCount": 0,
             "recommendCount": 0,
         }
-        todayRecipes = buildRecommendedRecipeList(None, sortKey="cookTime")[:3]
+        todayRecipes = recipe_service.get_recipe_list(limit=10)
         expiringIngredients = []
 
     return render_template(
@@ -695,21 +556,17 @@ def deleteIngredient(id: int):
 
 @app.route("/recipes/recommend")
 def recommendPage():
-    currentUser = getCurrentUser()
-    sortKey = request.args.get("sort", "matchPercent")
-    userID = currentUser["id"] if currentUser else None
-
-    recipes = buildRecommendedRecipeList(userID=userID, sortKey=sortKey)
+    # Fetch from the real database service
+    recipes = recipe_service.get_recipe_list(limit=20)
 
     return render_template("recommend.html", recipes=recipes)
 
 
 @app.route("/recipes/<recipeID>")
 def recipeDetailPage(recipeID: str):
-    currentUser = getCurrentUser()
-    userID = currentUser["id"] if currentUser else None
-
-    recipe = buildRecipeDetail(recipeID, userID)
+    # Fetch data using the new service and repository
+    recipe = recipe_service.get_formatted_recipe(recipeID)
+    
     if recipe is None:
         flash("레시피를 찾지 못했습니다.", "error")
         return redirect(url_for("recommendPage"))
