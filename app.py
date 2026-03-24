@@ -19,6 +19,18 @@ from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
+
+# ==== [팀원2] 블루프린트 및 DB 연동 ====
+from app import db
+app.config.from_object("config.Config")
+db.init_app(app)
+
+from app.routes.fridge import fridge_bp
+from app.routes.fridge_views import fridge_views_bp
+app.register_blueprint(fridge_bp)
+app.register_blueprint(fridge_views_bp)
+# =======================================
+
 app.config["SECRET_KEY"] = "change-this-secret-key"
 app.config["UPLOAD_FOLDER"] = str(Path("static") / "uploads")
 
