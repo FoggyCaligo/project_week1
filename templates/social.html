@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}소셜 | 오늘 냉장고{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container grid2">
+    <section class="card">
+      <div class="cardBody">
+        <div class="sectionHeader">
+          <div>
+            <h1 class="sectionTitle">후기 작성</h1>
+            <p class="sectionDesc">직접 만든 요리를 기록으로 남겨보세요.</p>
+          </div>
+        </div>
+
+        <form action="{{ url_for('createSocialPost') }}" method="post" enctype="multipart/form-data">
+          <div class="formGroup">
+            <label for="recipeID" class="formLabel">레시피 선택</label>
+            <select id="recipeID" name="recipeID" class="select" required>
+              <option value="">레시피를 선택하세요</option>
+              {% for recipe in availableRecipes %}
+                <option value="{{ recipe.recipeID }}">{{ recipe.recipeName }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="formGroup">
+            <label for="title" class="formLabel">제목</label>
+            <input type="text" id="title" name="title" class="input" required />
+          </div>
+
+          <div class="formGroup">
+            <label for="content" class="formLabel">후기 내용</label>
+            <textarea id="content" name="content" class="textarea" required></textarea>
+          </div>
+
+          <div class="formGroup">
+            <label for="imageFile" class="formLabel">이미지 업로드</label>
+            <input type="file" id="imageFile" name="imageFile" class="input" accept="image/*" />
+          </div>
+
+          <button type="submit" class="btn btnPrimary">후기 등록</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardBody">
+        <div class="sectionHeader">
+          <div>
+            <h2 class="sectionTitle">최근 후기</h2>
+            <p class="sectionDesc">다른 사용자의 요리 기록</p>
+          </div>
+        </div>
+
+        <div class="list">
+          {% for post in socialPosts %}
+          <article class="card postCard">
+            <div class="postHeader">
+              <div>
+                <strong>{{ post.title }}</strong>
+                <div class="postMeta">
+                  {{ post.nickName }} · {{ post.createdAt }} · {{ post.recipeName }}
+                </div>
+              </div>
+            </div>
+
+            {% if post.imagePath %}
+              <div style="margin-bottom: 14px; border-radius: 16px; overflow: hidden;">
+                <img src="{{ post.imagePath }}" alt="{{ post.title }}">
+              </div>
+            {% endif %}
+
+            <p style="margin: 0; line-height: 1.7;">{{ post.content }}</p>
+          </article>
+          {% else %}
+          <div class="emptyState">등록된 후기가 없습니다.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
+{% endblock %}
