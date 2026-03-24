@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}북마크 | 오늘 냉장고{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="sectionHeader">
+      <div>
+        <h1 class="sectionTitle">북마크</h1>
+        <p class="sectionDesc">나중에 다시 보고 싶은 레시피 목록입니다.</p>
+      </div>
+    </div>
+
+    <div class="grid3">
+      {% for recipe in bookmarkedRecipes %}
+      <article class="card recipeCard">
+        <div class="recipeThumb">
+          <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}">
+        </div>
+
+        <div class="recipeInfo">
+          <h2 class="recipeTitle">{{ recipe.recipeName }}</h2>
+
+          <div class="recipeMeta">
+            <span class="tag">저장일 {{ recipe.createdAt }}</span>
+          </div>
+
+          <div class="recipeActions">
+            <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
+            <form action="{{ url_for('removeBookmark', recipeID=recipe.recipeID) }}" method="post">
+              <button type="submit" class="btn btnGhost">삭제</button>
+            </form>
+          </div>
+        </div>
+      </article>
+      {% else %}
+      <div class="card emptyState">저장된 북마크가 없습니다.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
