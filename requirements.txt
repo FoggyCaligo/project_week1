@@ -1,7 +1,6 @@
 flask
 flask-sqlalchemy
 pymysql
-pymysql
+python-dotenv
 gunicorn
 werkzeug
-python-dotenv
