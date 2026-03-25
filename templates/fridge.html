@@ -220,6 +220,14 @@
     <script>
         const USER_ID = {{ session.get('userID', 1) }};
 
+        function renderSkeleton() {
+            return `
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
+            `;
+        }
+
         // 재료 추가/수정/삭제 시 레시피 새로고침 추가
         async function loadItems() {
             const sort = document.getElementById('sortSelect').value;
@@ -495,11 +503,11 @@
                         a.href = `/recipes/${recipe.recipeID}`;
                         a.style = "text-decoration: none; color: inherit;";
                         a.innerHTML = `
-                            <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
+                            <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; height: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
                                 <img src="${recipe.imageUrl}" alt="${recipe.recipeName}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
-                                <div class="cardBody" style="padding: 16px;">
+                                <div class="cardBody" style="padding: 16px; flex: 1;">
                                     <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">${recipe.recipeName}</h3>
-                                    <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4;">${recipe.description}</p>
+                                    <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${recipe.description}</p>
                                 </div>
                             </div>
                         `;
