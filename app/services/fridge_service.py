@@ -20,14 +20,12 @@ class FridgeService:
         except ValueError:
             return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
 
-        normalized_name = ingredient_name.lower().replace(" ", "")
         if not category:
             category = "기타"
 
         new_item = UserIngredient(
             user_id=user_id,
             ingredient_name=ingredient_name,
-            normalized_name=normalized_name,
             category=category,
             expire_date=expire_date
         )
@@ -36,6 +34,32 @@ class FridgeService:
             db.session.add(new_item)
             db.session.commit()
             return True, new_item
+        except Exception as e:
+            db.session.rollback()
+            return False, f"데이터베이스 저장 오류: {str(e)}"
+
+    @staticmethod
+    def edit_ingredient(user_id, ingredient_id, ingredient_name, category, expire_date_str):
+        """냉장고 재료 정보를 수정합니다."""
+        item = UserIngredient.query.filter_by(id=ingredient_id, user_id=user_id).first()
+        if not item:
+            return False, "해당 재료를 찾을 수 없습니다."
+            
+        if not ingredient_name or not expire_date_str:
+            return False, "재료명과 유통기한을 모두 입력해주세요."
+            
+        try:
+            expire_date = datetime.strptime(expire_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
+
+        item.ingredient_name = ingredient_name
+        item.category = category if category else "기타"
+        item.expire_date = expire_date
+        
+        try:
+            db.session.commit()
+            return True, item
         except Exception as e:
             db.session.rollback()
             return False, f"데이터베이스 저장 오류: {str(e)}"

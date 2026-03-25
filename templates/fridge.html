@@ -50,6 +50,15 @@
             <button type="submit">추가</button>
         </form>
 
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0;">목록</h2>
+            <select id="sortSelect" style="padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.9rem;" onchange="loadItems()">
+                <option value="expire_asc">유통기한 임박순</option>
+                <option value="name_asc">이름 가나다순</option>
+                <option value="created_desc">최근 등록순</option>
+            </select>
+        </div>
+
         <ul id="itemList" class="item-list">
             <!-- 스크립트를 통해 아이템 렌더링 -->
         </ul>
@@ -72,13 +81,62 @@
         {% endif %}
     </div>
 
+    <!-- 상세/수정 모달 -->
+    <div id="itemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative;">
+            <span onclick="closeModal()" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 1.5rem; color: #aaa;">&times;</span>
+            <h2 id="modalTitle" style="margin-top: 0; border-bottom: 2px solid #27ae60; padding-bottom: 10px; color: #2c3e50;">재료 상세</h2>
+            
+            <div id="modalContent">
+                <!-- 상세 정보 -->
+                <p><strong>재료명:</strong> <span id="detailName"></span></p>
+                <p><strong>분류:</strong> <span id="detailCategory"></span></p>
+                <p><strong>유통기한:</strong> <span id="detailExpire"></span> <span id="detailBadge" class="badge"></span></p>
+                <p><strong>등록일시:</strong> <span id="detailCreated"></span></p>
+                
+                <div style="margin-top: 20px; text-align: right;">
+                    <button type="button" onclick="showEditForm()" style="background: #f39c12; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">수정하기</button>
+                </div>
+            </div>
+
+            <form id="editForm" style="display: none; margin-top: 15px;">
+                <input type="hidden" id="edit_id">
+                <div class="form-group">
+                    <label>재료명</label>
+                    <input type="text" id="edit_name" required>
+                </div>
+                <div class="form-group">
+                    <label>분류</label>
+                    <select id="edit_category">
+                        <option value="채소류">채소류</option>
+                        <option value="육류">육류</option>
+                        <option value="해산물">해산물</option>
+                        <option value="유제품">유제품</option>
+                        <option value="과일류">과일류</option>
+                        <option value="가공식품">가공식품</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>유통기한</label>
+                    <input type="date" id="edit_expire" required>
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px;">취소</button>
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        const USER_ID = 1; // 통합 시 로그인 세션에서 받아올 예정
+        const USER_ID = {{ session.get('userID', 1) }};
 
         // 냉장고 목록 불러오기
         async function loadItems() {
             try {
-                const res = await fetch(`/api/fridge/${USER_ID}`);
+                const sort = document.getElementById('sortSelect').value;
+                const res = await fetch(`/api/fridge/${USER_ID}?sort=${sort}`);
                 const data = await res.json();
                 const list = document.getElementById('itemList');
                 list.innerHTML = '';
@@ -110,7 +168,7 @@
                     const li = document.createElement('li');
                     li.className = 'item-card';
                     li.innerHTML = `
-                        <div class="item-info">
+                        <div class="item-info" onclick="openModal(${item.id})" style="cursor: pointer;">
                             <div class="item-name">
                                 ${item.ingredient_name}
                                 <span class="badge ${badgeClass}">${badgeText}</span>
@@ -128,6 +186,96 @@
                 console.error("데이터 로드 오류:", err);
             }
         }
+
+        // 재료 상세 모달 열기
+        async function openModal(id) {
+            try {
+                const res = await fetch(`/api/fridge/item/${id}`);
+                if (!res.ok) {
+                    alert('상세 정보를 불러올 수 없습니다.');
+                    return;
+                }
+                const data = await res.json();
+                const item = data.item;
+
+                document.getElementById('detailName').innerText = item.ingredient_name;
+                document.getElementById('detailCategory').innerText = item.category;
+                document.getElementById('detailExpire').innerText = item.expire_date;
+                document.getElementById('detailCreated').innerText = item.created_at;
+
+                let badgeClass = 'badge-success';
+                let badgeText = `D-${item.days_left}`;
+                if (item.days_left < 0) {
+                    badgeClass = 'badge-danger';
+                    badgeText = `(D+${Math.abs(item.days_left)})`;
+                } else if (item.days_left <= 3) {
+                    badgeClass = 'badge-warning';
+                } else if (item.days_left === 0) {
+                    badgeClass = 'badge-danger';
+                    badgeText = `D-Day`;
+                }
+                
+                const badge = document.getElementById('detailBadge');
+                badge.className = `badge ${badgeClass}`;
+                badge.innerText = badgeText;
+
+                // 폼에도 값 미리 채워넣기
+                document.getElementById('edit_id').value = item.id;
+                document.getElementById('edit_name').value = item.ingredient_name;
+                document.getElementById('edit_category').value = item.category;
+                document.getElementById('edit_expire').value = item.expire_date;
+
+                cancelEdit(); // 상세정보 보기 모드로 초기화
+                document.getElementById('itemModal').style.display = 'flex';
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').style.display = 'none';
+        }
+
+        function showEditForm() {
+            document.getElementById('modalContent').style.display = 'none';
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('modalTitle').innerText = '재료 수정';
+        }
+
+        function cancelEdit() {
+            document.getElementById('modalContent').style.display = 'block';
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('modalTitle').innerText = '재료 상세';
+        }
+
+        // 재료 수정 처리
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const payload = {
+                ingredient_name: document.getElementById('edit_name').value,
+                category: document.getElementById('edit_category').value,
+                expire_date: document.getElementById('edit_expire').value
+            };
+
+            try {
+                const res = await fetch(`/api/fridge/edit/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    closeModal();
+                    loadItems(); 
+                } else {
+                    const data = await res.json();
+                    alert(data.message || '수정에 실패했습니다.');
+                }
+            } catch (err) {
+                alert("서버와의 통신 오류가 발생했습니다.");
+            }
+        });
 
         // 재료 추가 처리
         document.getElementById('addForm').addEventListener('submit', async (e) => {
