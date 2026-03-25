@@ -1,118 +1,158 @@
-{% extends "base.html" %}
-{% block title %}현재 냉장고 | 오늘 냉장고{% endblock %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 냉장고 관리</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        .form-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        input, select, button { padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; }
+        input[type="text"] { flex: 2; min-width: 150px; }
+        select { flex: 1; min-width: 120px; }
+        input[type="date"] { flex: 1.5; min-width: 140px; }
+        button[type="submit"] { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; flex: 1; min-width: 80px; }
+        button[type="submit"]:hover { background-color: #2980b9; }
+        .item-list { list-style: none; padding: 0; margin: 0; }
+        .item-card { display: flex; justify-content: space-between; align-items: center; padding: 18px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; background-color: #fff; transition: transform 0.2s; }
+        .item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .item-info { display: flex; flex-direction: column; gap: 6px; }
+        .item-name { font-size: 18px; font-weight: 700; color: #2c3e50; display: flex; align-items: center; }
+        .item-meta { font-size: 13px; color: #7f8c8d; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 12px; }
+        .badge-danger { background-color: #e74c3c; color: white; }
+        .badge-warning { background-color: #f1c40f; color: #2c3e50; }
+        .badge-success { background-color: #2ecc71; color: white; }
+        .btn-delete { background-color: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-delete:hover { background-color: #c0392b; }
+        .empty-msg { text-align: center; color: #95a5a6; padding: 40px 0; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>❄️ 내 냉장고 식재료 관리</h1>
+        
+        <form id="addForm" class="form-group">
+            <input type="text" id="ingredient_name" placeholder="재료명 (예: 당근)" required>
+            <select id="category" required>
+                <option value="">분류</option>
+                <option value="채소">채소</option>
+                <option value="과일">과일</option>
+                <option value="육류">육류</option>
+                <option value="수산물">수산물</option>
+                <option value="유제품">유제품</option>
+                <option value="가공식품">가공식품</option>
+                <option value="기타">기타</option>
+            </select>
+            <input type="date" id="expire_date" required>
+            <button type="submit">추가</button>
+        </form>
 
-{% block content %}
-<section class="section">
-  <div class="container">
-    <div class="sectionHeader">
-      <div>
-        <h1 class="sectionTitle">현재 냉장고</h1>
-        <p class="sectionDesc">보유 식재료를 추가하고 유통기한을 관리하세요.</p>
-      </div>
+        <ul id="itemList" class="item-list">
+            <!-- 스크립트를 통해 아이템 렌더링 -->
+        </ul>
     </div>
 
-    <div class="metricGrid section">
-      <div class="card metricCard">
-        <div class="metricLabel">전체 재료</div>
-        <div class="metricValue">{{ fridgeSummary.totalCount or 0 }}</div>
-      </div>
-      <div class="card metricCard">
-        <div class="metricLabel">임박 재료</div>
-        <div class="metricValue">{{ fridgeSummary.expiringCount or 0 }}</div>
-      </div>
-      <div class="card metricCard">
-        <div class="metricLabel">추천 가능 메뉴</div>
-        <div class="metricValue">{{ fridgeSummary.recommendCount or 0 }}</div>
-      </div>
-    </div>
+    <script>
+        const USER_ID = {{ session.get('user_id', 1) }}; // 서버 세션에서 가져옴
 
-    <div class="grid2">
-      <section class="card">
-        <div class="cardBody">
-          <div class="sectionHeader">
-            <div>
-              <h2 class="sectionTitle">재료 추가</h2>
-              <p class="sectionDesc">재료명과 유통기한만 입력하세요.</p>
-            </div>
-          </div>
+        // 냉장고 목록 불러오기
+        async function loadItems() {
+            try {
+                const res = await fetch(`/api/fridge/${USER_ID}`);
+                const data = await res.json();
+                const list = document.getElementById('itemList');
+                list.innerHTML = '';
 
-          <form action="{{ url_for('addIngredient') }}" method="post">
-            <div class="formGroup">
-              <label for="ingredientName" class="formLabel">재료명</label>
-              <input
-                type="text"
-                id="ingredientName"
-                name="ingredientName"
-                class="input"
-                placeholder="예: 계란, 두부, 양파"
-                required
-              />
-            </div>
+                if (data.items.length === 0) {
+                    list.innerHTML = '<li class="empty-msg">냉장고가 텅 비어있습니다.<br>위에서 식재료를 추가해보세요!</li>';
+                    return;
+                }
 
-            <div class="formGroup">
-              <label for="expireDate" class="formLabel">유통기한</label>
-              <input type="date" id="expireDate" name="expireDate" class="input" required />
-            </div>
+                data.items.forEach(item => {
+                    let badgeClass = 'badge-success';
+                    let badgeText = `D-${item.days_left}`;
+                    
+                    if (item.days_left < 0) {
+                        badgeClass = 'badge-danger';
+                        badgeText = `유통기한 경과 (D+${Math.abs(item.days_left)})`;
+                    } else if (item.days_left <= 3) {
+                        badgeClass = 'badge-warning'; // 3일 이하 임박 
+                    } else if (item.days_left === 0) {
+                        badgeClass = 'badge-danger';
+                        badgeText = `D-Day`;
+                    }
 
-            <div class="formGroup">
-              <span class="formLabel">빠른 추가</span>
-              <div class="tagList">
-                <span class="tag">계란</span>
-                <span class="tag">두부</span>
-                <span class="tag">양파</span>
-                <span class="tag">대파</span>
-                <span class="tag">우유</span>
-              </div>
-            </div>
+                    const li = document.createElement('li');
+                    li.className = 'item-card';
+                    li.innerHTML = `
+                        <div class="item-info">
+                            <div class="item-name">
+                                ${item.ingredient_name}
+                                <span class="badge ${badgeClass}">${badgeText}</span>
+                            </div>
+                            <div class="item-meta">
+                                <span>분류: ${item.category}</span> | 
+                                <span>유통기한: ${item.expire_date}</span>
+                            </div>
+                        </div>
+                        <button class="btn-delete" onclick="deleteItem(${item.id})">삭제</button>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error("데이터 로드 오류:", err);
+            }
+        }
 
-            <button type="submit" class="btn btnPrimary">재료 추가</button>
-          </form>
-        </div>
-      </section>
+        // 재료 추가 처리
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                user_id: USER_ID,
+                ingredient_name: document.getElementById('ingredient_name').value,
+                category: document.getElementById('category').value,
+                expire_date: document.getElementById('expire_date').value
+            };
 
-      <section class="card">
-        <div class="cardBody">
-          <div class="sectionHeader">
-            <div>
-              <h2 class="sectionTitle">보유 재료 목록</h2>
-              <p class="sectionDesc">유통기한이 가까운 재료를 먼저 확인하세요.</p>
-            </div>
-          </div>
+            try {
+                const res = await fetch('/api/fridge/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('addForm').reset();
+                    loadItems(); // 목록 새로고침
+                } else {
+                    const data = await res.json();
+                    alert(data.message || '추가에 실패했습니다.');
+                }
+            } catch (err) {
+                alert("서버와의 통신 오류가 발생했습니다.");
+            }
+        });
 
-          <div class="list">
-            {% for ingredient in ingredients %}
-            <div class="listItem">
-              <div class="listItemMain">
-                <strong>{{ ingredient.ingredientName }}</strong>
-                <span class="listItemSub">
-                  유통기한: {{ ingredient.expireDate }}
-                  {% if ingredient.normalizedName %}
-                    · 표준명: {{ ingredient.normalizedName }}
-                  {% endif %}
-                </span>
-              </div>
+        // 재료 삭제 처리
+        async function deleteItem(id) {
+            if (!confirm('해당 식재료를 삭제하시겠습니까?')) return;
+            try {
+                const res = await fetch(`/api/fridge/delete/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadItems();
+                } else {
+                    alert('삭제에 실패했습니다.');
+                }
+            } catch (err) {
+                alert("서버 통신 오류");
+            }
+        }
 
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                {% if ingredient.daysLeft is not none and ingredient.daysLeft < 0 %}
-                  <span class="tag tagDanger">기한 경과</span>
-                {% elif ingredient.daysLeft is not none and ingredient.daysLeft <= 3 %}
-                  <span class="tag tagWarning">임박</span>
-                {% else %}
-                  <span class="tag tagSuccess">안전</span>
-                {% endif %}
-
-                <form action="{{ url_for('deleteIngredient', id=ingredient.id) }}" method="post">
-                  <button type="submit" class="btn btnGhost">삭제</button>
-                </form>
-              </div>
-            </div>
-            {% else %}
-            <div class="emptyState">등록된 재료가 없습니다.</div>
-            {% endfor %}
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-</section>
-{% endblock %}
+        // 페이지 로드 시 최초 데이터 조회
+        loadItems();
+    </script>
+</body>
+</html>
