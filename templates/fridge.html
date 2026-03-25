@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% block title %}내 냉장고 관리 | 오늘 냉장고{% endblock %}
+{% block title %}현재 냉장고 | 오늘 냉장고{% endblock %}
 
 {% block content %}
 <section class="section">
     <div class="container" style="max-width: 800px; margin: 0 auto;">
         
         <div class="sectionHeader">
-            <h1 class="sectionTitle">❄️ 내 냉장고 식재료 관리</h1>
-            <p class="sectionDesc">냉장고 속 재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
+            <h1 class="sectionTitle">현재 냉장고</h1>
+            <p class="sectionDesc">냉장고 속 식재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
         </div>
 
-        <div class="card" style="margin-bottom: 30px;">
+        <div class="card" style="margin-bottom: 32px;">
             <div class="cardBody">
                 <form id="addForm" class="formGroup" style="display: flex; gap: 12px; margin-bottom: 0; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 2; min-width: 150px;">
                         <label class="formLabel" for="ingredient_name">재료명</label>
-                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근" required>
+                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required>
                     </div>
                     <div style="flex: 1; min-width: 120px;">
                         <label class="formLabel" for="category">분류</label>
@@ -35,15 +35,15 @@
                         <input type="date" id="expire_date" class="input" required>
                     </div>
                     <div style="flex: 0 0 auto;">
-                        <button type="submit" class="btn btnPrimary" style="height: 48px; padding: 0 24px;">추가하기</button>
+                        <button type="submit" class="btn btnPrimary" style="height: 44px; padding: 0 24px;">추가</button>
                     </div>
                 </form>
             </div>
         </div>
 
         <div class="sectionHeader" style="margin-top: 40px; margin-bottom: 16px;">
-            <h2 class="sectionTitle" style="font-size: 22px;">현재 보관 중인 재료</h2>
-            <select id="sortSelect" class="input" style="width: auto; padding: 8px 36px 8px 12px; font-size: 14px;" onchange="loadItems()">
+            <h2 class="sectionTitle" style="font-size: 20px;">보관 중인 식재료 목록</h2>
+            <select id="sortSelect" class="input" style="width: auto; padding: 6px 32px 6px 12px; font-size: 14px;" onchange="loadItems()">
                 <option value="expire_asc">유통기한 임박순</option>
                 <option value="name_asc">이름 가나다순</option>
                 <option value="created_desc">최근 등록순</option>
@@ -59,19 +59,21 @@
         {% if recommended_recipes %}
         <div style="margin-top: 48px;">
             <div class="sectionHeader">
-                <h2 class="sectionTitle" style="font-size: 22px;">💡 이런 레시피는 어때요?</h2>
+                <h2 class="sectionTitle" style="font-size: 20px;">💡 이런 레시피는 어때요?</h2>
                 <p class="sectionDesc">유통기한이 임박한 재료를 활용한 추천 요리입니다.</p>
             </div>
             
             <div class="grid3">
                 {% for recipe in recommended_recipes %}
-                <div class="card">
-                    <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
-                    <div class="cardBody" style="padding: 16px;">
-                        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">{{ recipe.recipeName }}</h3>
-                        <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4;">{{ recipe.description }}</p>
+                <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" style="text-decoration: none; color: inherit;">
+                    <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
+                        <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
+                        <div class="cardBody" style="padding: 16px;">
+                            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">{{ recipe.recipeName }}</h3>
+                            <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4;">{{ recipe.description }}</p>
+                        </div>
                     </div>
-                </div>
+                </a>
                 {% endfor %}
             </div>
         </div>
@@ -81,7 +83,7 @@
 
 <!-- 상세/수정 모달 -->
 <div id="itemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px);">
-    <div class="card" style="width: 90%; max-width: 420px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+    <div class="card" style="width: 90%; max-width: 420px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
         <span onclick="closeModal()" style="position: absolute; right: 20px; top: 16px; cursor: pointer; font-size: 24px; color: var(--colorTextSub); line-height: 1;">&times;</span>
         <div class="cardBody">
             <h2 id="modalTitle" style="margin: 0 0 20px 0; font-size: 20px; font-weight: 800; color: var(--colorText); padding-bottom: 12px; border-bottom: 2px solid var(--colorPrimary);">재료 상세</h2>
