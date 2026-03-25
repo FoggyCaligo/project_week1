@@ -1,4 +1,7 @@
 flask
+flask-sqlalchemy
+pymysql
 pymysql
 gunicorn
 werkzeug
+python-dotenv
