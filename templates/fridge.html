@@ -5,19 +5,21 @@
 <section class="section">
     <div class="container" style="max-width: 800px; margin: 0 auto;">
         
-        <div class="sectionHeader">
-            <h1 class="sectionTitle">현재 냉장고</h1>
-            <p class="sectionDesc">냉장고 속 식재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
+        <div class="sectionHeader fridgeHeader">
+            <div>
+                <h1 class="sectionTitle">현재 냉장고</h1>
+                <p class="sectionDesc">냉장고 속 식재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
+            </div>
         </div>
 
         <div class="card" style="margin-bottom: 32px;">
             <div class="cardBody">
-                <form id="addForm" class="formGroup" style="display: flex; gap: 12px; margin-bottom: 0; align-items: flex-end; flex-wrap: wrap;">
-                    <div style="flex: 2; min-width: 150px;">
+                <form id="addForm" class="fridgeAddForm">
+                    <div class="formField">
                         <label class="formLabel" for="ingredient_name">재료명</label>
                         <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required>
                     </div>
-                    <div style="flex: 1; min-width: 120px;">
+                    <div class="formField">
                         <label class="formLabel" for="category">분류</label>
                         <select id="category" class="input" required>
                             <option value="">분류 선택</option>
@@ -30,12 +32,12 @@
                             <option value="기타">기타</option>
                         </select>
                     </div>
-                    <div style="flex: 1.5; min-width: 140px;">
+                    <div class="formField">
                         <label class="formLabel" for="expire_date">유통기한</label>
                         <input type="date" id="expire_date" class="input" required>
                     </div>
-                    <div style="flex: 0 0 auto;">
-                        <button type="submit" class="btn btnPrimary" style="height: 44px; padding: 0 24px;">추가</button>
+                    <div class="formField fridgeAddButtonWrap">
+                        <button type="submit" class="btn btnPrimary fridgeAddButton">추가</button>
                     </div>
                 </form>
             </div>
@@ -217,9 +219,74 @@
         50% { background-color: #e9ecef; }
         100% { background-color: #f1f3f5; }
     }
+
+    .fridgeAddForm {
+        display: grid;
+        grid-template-columns: 2fr 1.2fr 1.4fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .formField {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .fridgeAddButton {
+        min-width: 96px;
+    }
+
+    @media (max-width: 900px) {
+        .fridgeAddForm {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .fridgeAddButtonWrap {
+            grid-column: 1 / -1;
+        }
+
+        .fridgeAddButton {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .fridgeAddForm {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
     <script>
+        function showToast(message, type="success") {
+            let wrap = document.querySelector('.flashWrap');
+            if (!wrap) {
+                wrap = document.createElement('div');
+                wrap.className = 'flashWrap';
+                const container = document.querySelector('main .container');
+                if (container) container.insertBefore(wrap, container.firstChild);
+            }
+            const msg = document.createElement('div');
+            msg.className = `flashMessage flash${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            msg.innerText = message;
+            wrap.appendChild(msg);
+            
+            setTimeout(() => {
+                msg.style.transition = 'opacity 0.3s ease';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 300);
+            }, 3000);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const expireInput = document.getElementById("expire_date");
+            if (expireInput) {
+                const today = new Date().toISOString().split('T')[0];
+                expireInput.setAttribute('min', today);
+            }
+        });
+
         const USER_ID = {{ session.get('userID', 1) }};
         let globalAllItems = [];
         let globalFridgeGroups = {};
@@ -439,17 +506,17 @@
                 });
                 
                 if (res.ok) {
+                    showToast('성공적으로 수정되었습니다.');
                     await loadItems(); 
                     loadRecommendedRecipes();
                     
-                    // 수정한 재료의 그룹 모달 다시 열기 (이름이 변경되었을 수도 있으므로 수정된 이름으로 연다)
                     openGroupModal(payload.ingredient_name);
                 } else {
                     const data = await res.json();
-                    alert(data.message || '수정에 실패했습니다.');
+                    showToast(data.message || '수정에 실패했습니다.', 'error');
                 }
             } catch (err) {
-                alert("서버와의 통신 오류가 발생했습니다.");
+                showToast('서버와의 통신 오류가 발생했습니다.', 'error');
             }
         });
 
@@ -470,15 +537,16 @@
                 });
                 
                 if (res.ok) {
+                    showToast('식재료가 추가되었습니다.');
                     document.getElementById('addForm').reset();
                     loadItems(); 
                     loadRecommendedRecipes();
                 } else {
                     const data = await res.json();
-                    alert(data.message || '추가에 실패했습니다.');
+                    showToast(data.message || '추가에 실패했습니다.', 'error');
                 }
             } catch (err) {
-                alert("서버와의 통신 오류가 발생했습니다.");
+                showToast('서버와의 통신 오류가 발생했습니다.', 'error');
             }
         });
 
@@ -488,6 +556,7 @@
             try {
                 const res = await fetch(`/api/fridge/delete/${id}`, { method: 'DELETE' });
                 if (res.ok) {
+                    showToast('성공적으로 삭제되었습니다.');
                     const item = globalAllItems.find(i => i.id === id);
                     const groupName = item ? item.ingredient_name : null;
                     
@@ -495,15 +564,15 @@
                     loadRecommendedRecipes();
                     
                     if (groupName && globalFridgeGroups[groupName]) {
-                        openGroupModal(groupName); // 남아있으면 갱신
+                        openGroupModal(groupName);
                     } else {
-                        closeModal(); // 다 지워졌으면 닫기
+                        closeModal();
                     }
                 } else {
-                    alert('삭제에 실패했습니다.');
+                    showToast('삭제에 실패했습니다.', 'error');
                 }
             } catch (err) {
-                alert("서버 통신 오류");
+                showToast('서버 통신 오류가 발생했습니다.', 'error');
             }
         }
 
