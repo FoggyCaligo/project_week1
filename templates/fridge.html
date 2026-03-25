@@ -89,31 +89,31 @@
             <h2 id="modalTitle" style="margin: 0 0 20px 0; font-size: 20px; font-weight: 800; color: var(--colorText); padding-bottom: 12px; border-bottom: 2px solid var(--colorPrimary);">재료 상세</h2>
             
             <div id="modalContent">
-                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px;">
-                    <div style="display: flex; justify-content: space-between;">
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px; padding: 10px 0;">
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
                         <strong style="color: var(--colorTextSub);">재료명</strong>
-                        <span id="detailName" style="font-weight: 600;"></span>
+                        <span id="detailName" style="font-weight: 600; color: var(--colorText);"></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
                         <strong style="color: var(--colorTextSub);">분류</strong>
-                        <span id="detailCategory"></span>
+                        <span id="detailCategory" style="color: var(--colorText);"></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
                         <strong style="color: var(--colorTextSub);">유통기한</strong>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <span id="detailExpire"></span>
-                            <span id="detailBadge" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white;"></span>
+                            <span id="detailExpire" style="color: var(--colorText);"></span>
+                            <span id="detailBadge" style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white;"></span>
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 4px;">
                         <strong style="color: var(--colorTextSub);">등록일시</strong>
-                        <span id="detailCreated" style="font-size: 13px;"></span>
+                        <span id="detailCreated" style="font-size: 13px; color: var(--colorTextSub);"></span>
                     </div>
                 </div>
                 
-                <div style="margin-top: 28px; display: flex; gap: 10px;">
-                    <button type="button" class="btn btnSecondary" style="flex: 1;" onclick="closeModal()">닫기</button>
-                    <button type="button" class="btn btnPrimary" style="flex: 1;" onclick="showEditForm()">수정하기</button>
+                <div style="margin-top: 24px; display: flex; gap: 10px;">
+                    <button type="button" class="btn btnSecondary" style="flex: 1; background: #e8f5e9; color: #55b271; border: none; font-weight: 600; padding: 12px; border-radius: 8px;" onclick="closeModal()">닫기</button>
+                    <button type="button" class="btn btnPrimary" style="flex: 1; background: #55b271; border: none; font-weight: 600; padding: 12px; border-radius: 8px;" onclick="showEditForm()">수정하기</button>
                 </div>
             </div>
 
@@ -193,7 +193,7 @@
         color: white;
     }
     .badge-success { background-color: #2ecc71; color: white; }
-    .badge-warning { background-color: #f1c40f; color: #2c3e50; }
+    .badge-warning { background-color: #f1c40f; color: white; }
     .badge-danger { background-color: #e74c3c; color: white; }
 </style>
 
@@ -235,11 +235,22 @@
 
                     const li = document.createElement('li');
                     li.className = 'item-row';
+                    
+                    // 뱃지 인라인 스타일 적용
+                    let badgeStyle = '';
+                    if (badgeClass === 'badge-success') {
+                        badgeStyle = 'background-color: #2ecc71; color: white;';
+                    } else if (badgeClass === 'badge-warning') {
+                        badgeStyle = 'background-color: #f1c40f; color: #2c3e50;';
+                    } else {
+                        badgeStyle = 'background-color: #e74c3c; color: white;';
+                    }
+
                     li.innerHTML = `
                         <div class="item-info-clickable" onclick="openModal(${item.id})">
                             <div class="item-name-wrap">
                                 ${item.ingredient_name}
-                                <span class="badge-dday ${badgeClass}">${badgeText}</span>
+                                <span class="badge-dday" style="${badgeStyle}">${badgeText}</span>
                             </div>
                             <div class="item-meta-wrap">
                                 <span>${item.category}</span>
@@ -247,7 +258,7 @@
                                 <span>${item.expire_date}</span>
                             </div>
                         </div>
-                        <button class="btn btnGhost" style="color: #e74c3c;" onclick="deleteItem(${item.id})">삭제</button>
+                        <button class="btn btnGhost" style="color: #e74c3c; padding: 8px 16px;" onclick="deleteItem(${item.id})">삭제</button>
                     `;
                     list.appendChild(li);
                 });
@@ -287,6 +298,17 @@
                 const badge = document.getElementById('detailBadge');
                 badge.className = `badge-dday ${badgeClass}`;
                 badge.innerText = badgeText;
+                
+                if (badgeClass === 'badge-success') {
+                    badge.style.backgroundColor = '#2ecc71';
+                    badge.style.color = 'white';
+                } else if (badgeClass === 'badge-warning') {
+                    badge.style.backgroundColor = '#f1c40f';
+                    badge.style.color = '#2c3e50';
+                } else {
+                    badge.style.backgroundColor = '#e74c3c';
+                    badge.style.color = 'white';
+                }
 
                 // 폼에도 값 미리 채워넣기
                 document.getElementById('edit_id').value = item.id;
