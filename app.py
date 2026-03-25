@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename
 
 from db import Database
 from repository.recipeDetailRepository import RecipeDetailRepository
-from service.recipeDetailService import RecipeDetailService
+from app.services.recipeDetailService import RecipeDetailService
 
 
 app = Flask(__name__)
