@@ -4,19 +4,19 @@ from werkzeug.utils import secure_filename
 from uuid import uuid4
 from pathlib import Path
 from app.common import (
-    getCurrentUser, buildHomeSummary, buildRecommendedRecipeList, getUserIngredientList,
-    requireLogin, getRecipeByID, getNextID, getNow, bookmarks, socialPosts, findUserByID, buildRecipeCard, formatDateTime, buildRecipeDetail, recipeCatalog
+     buildHomeSummary, buildRecommendedRecipeList, getUserIngredientList,
+     getRecipeByID, getNextID, getNow, bookmarks, socialPosts, buildRecipeCard, formatDateTime, buildRecipeDetail, recipeCatalog
 )
-
+from app.services.authService import AuthService
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route("/")
 def home():
-    currentUser = getCurrentUser()
+    currentUser = AuthService.getCurrentUser()
     if currentUser:
-        summary = buildHomeSummary(currentUser["id"])
-        todayRecipes = buildRecommendedRecipeList(currentUser["id"])[:3]
-        expiringIngredients = getUserIngredientList(currentUser["id"])[:5]
+        summary = buildHomeSummary(currentUser.ID)
+        todayRecipes = buildRecommendedRecipeList(currentUser.ID)[:3]
+        expiringIngredients = getUserIngredientList(currentUser.ID)[:5]
     else:
         summary = {"ingredientCount": 0, "expiringCount": 0, "recommendCount": 0}
         todayRecipes = buildRecommendedRecipeList(None, sortKey="cookTime")[:3]
@@ -26,7 +26,7 @@ def home():
 
 @main_bp.route("/search")
 def searchPage():
-    currentUser = getCurrentUser()
+    currentUser = AuthService.getCurrentUser()
     searchKeyword = request.args.get("q", "").strip()
     userID = currentUser["id"] if currentUser else None
     recipes = buildRecommendedRecipeList(userID=userID, sortKey="matchPercent", searchKeyword=searchKeyword)
@@ -34,7 +34,7 @@ def searchPage():
 
 @main_bp.route("/recipes/recommend")
 def recommendPage():
-    currentUser = getCurrentUser()
+    currentUser = AuthService.getCurrentUser()
     sortKey = request.args.get("sort", "matchPercent")
     userID = currentUser["id"] if currentUser else None
     recipes = buildRecommendedRecipeList(userID=userID, sortKey=sortKey)
@@ -42,7 +42,7 @@ def recommendPage():
 
 @main_bp.route("/recipes/<recipeID>")
 def recipeDetailPage(recipeID: str):
-    currentUser = getCurrentUser()
+    currentUser = AuthService.getCurrentUser()
     userID = currentUser["id"] if currentUser else None
     recipe = buildRecipeDetail(recipeID, userID)
     if recipe is None:
@@ -52,7 +52,7 @@ def recipeDetailPage(recipeID: str):
 
 @main_bp.route("/bookmarks/add/<recipeID>", methods=["POST"])
 def addBookmark(recipeID: str):
-    currentUser, redirectResponse = requireLogin()
+    currentUser, redirectResponse = AuthService.requireLogin()
     if redirectResponse: return redirectResponse
     recipeData = getRecipeByID(recipeID)
     if recipeData is None:
@@ -69,7 +69,7 @@ def addBookmark(recipeID: str):
 
 @main_bp.route("/bookmarks")
 def bookmarksPage():
-    currentUser, redirectResponse = requireLogin()
+    currentUser, redirectResponse = AuthService.requireLogin()
     if redirectResponse: return redirectResponse
     userBookmarkList = sorted([item for item in bookmarks if item["userID"] == currentUser["id"]], key=lambda item: item["createdAt"], reverse=True)
     bookmarkedRecipes = []
@@ -83,7 +83,7 @@ def bookmarksPage():
 
 @main_bp.route("/bookmarks/remove/<recipeID>", methods=["POST"])
 def removeBookmark(recipeID: str):
-    currentUser, redirectResponse = requireLogin()
+    currentUser, redirectResponse = AuthService.requireLogin()
     if redirectResponse: return redirectResponse
     targetBookmark = next((item for item in bookmarks if item["userID"] == currentUser["id"] and item["recipeID"] == recipeID), None)
     if targetBookmark is None:
@@ -95,11 +95,11 @@ def removeBookmark(recipeID: str):
 
 @main_bp.route("/social")
 def socialPage():
-    currentUser = getCurrentUser()
+    currentUser = AuthService.getCurrentUser()
     availableRecipes = [{"recipeID": r["recipeID"], "recipeName": r["recipeName"]} for r in recipeCatalog]
     socialPostViewList = []
     for postData in sorted(socialPosts, key=lambda item: item["createdAt"], reverse=True):
-        writerData = findUserByID(postData["userID"])
+        writerData = AuthService.findUserByID(postData["userID"])
         recipeData = getRecipeByID(postData["recipeID"])
         socialPostViewList.append({
             "id": postData["id"], "title": postData["title"], "content": postData["content"], "imagePath": postData["imagePath"],
@@ -111,7 +111,7 @@ def socialPage():
 
 @main_bp.route("/social/create", methods=["POST"])
 def createSocialPost():
-    currentUser, redirectResponse = requireLogin()
+    currentUser, redirectResponse = AuthService.requireLogin()
     if redirectResponse: return redirectResponse
     recipeID, title, content = request.form.get("recipeID", "").strip(), request.form.get("title", "").strip(), request.form.get("content", "").strip()
     imageFile = request.files.get("imageFile")
