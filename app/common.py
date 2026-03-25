@@ -103,16 +103,9 @@ def getNextID(targetList: list[dict]) -> int:
 def findUserByID(userID: int) -> dict | None:
     return next((user for user in users if user["id"] == userID), None)
 
-def findUserByUserName(userName: str) -> dict | None:
-    return next((user for user in users if user["userName"] == userName), None)
-
-def getCurrentUser() -> dict | None:
-    userID = session.get("userID")
-    if not userID: return None
-    return findUserByID(userID)
-
 def requireLogin():
-    currentUser = getCurrentUser()
+    from app.services.authService import AuthService 
+    currentUser = AuthService.getCurrentUser()
     if currentUser is None:
         flash("로그인이 필요합니다.", "error")
         return None, redirect(url_for("auth.loginPage"))
@@ -231,16 +224,16 @@ def buildHomeSummary(userID: int) -> dict:
         "recommendCount": len([item for item in recommendedList if item["matchPercent"] > 0]),
     }
 
-def seedDemoData():
-    if users: return
-    users.append({
-        "id": 1, "userName": "demo", "passwordHash": generate_password_hash("demo1234"),
-        "nickName": "데모사용자", "createdAt": getNow(),
-    })
-    bookmarks.append({"id": 1, "userID": 1, "recipeID": "R003", "createdAt": getNow()})
-    socialPosts.append({
-        "id": 1, "userID": 1, "recipeID": "R003", "title": "간단하게 두부부침",
-        "content": "재료가 적게 들어서 빠르게 만들기 좋았습니다.", "imagePath": "", "createdAt": getNow(),
-    })
+# def seedDemoData():
+#     if users: return
+#     users.append({
+#         "id": 1, "userName": "demo", "passwordHash": generate_password_hash("demo1234"),
+#         "nickName": "데모사용자", "createdAt": getNow(),
+#     })
+#     bookmarks.append({"id": 1, "userID": 1, "recipeID": "R003", "createdAt": getNow()})
+#     socialPosts.append({
+#         "id": 1, "userID": 1, "recipeID": "R003", "title": "간단하게 두부부침",
+#         "content": "재료가 적게 들어서 빠르게 만들기 좋았습니다.", "imagePath": "", "createdAt": getNow(),
+#     })
 
-seedDemoData()
+# seedDemoData()
