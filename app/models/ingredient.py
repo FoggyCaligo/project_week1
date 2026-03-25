@@ -1,5 +1,5 @@
-from app import db
 from datetime import datetime
+from extensions import db
 
 class UserIngredient(db.Model):
     """
@@ -9,18 +9,16 @@ class UserIngredient(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     # 팀원1의 users 테이블과 연동되는 외래키 (현재는 주석 처리, 병합 후 연결)
-    # user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    user_id = db.Column(db.Integer, nullable=False, default=1)  # 테스트용 임시 user_id
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
-    ingredient_name = db.Column(db.String(120), nullable=False)
-    normalized_name = db.Column(db.String(120), nullable=False)  # API 매칭용 정규화 이름 (공백제거 등)
+    ingredient_name = db.Column(db.String(120), nullable=False) 
+    normalized_name = db.Column(db.String(120), nullable=False, index=True)  # API 매칭용 정규화 이름 (공백제거 등)
     category = db.Column(db.String(50), nullable=False)          # 육류, 채소류 등
     expire_date = db.Column(db.Date, nullable=False)             # 유통기한
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) # 등록일
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False) # 등록일
 
     def __repr__(self):
         return f'<UserIngredient {self.ingredient_name}>'
-
     def to_dict(self):
         """API 응답용 딕셔너리 변환 메서드"""
         days_left = (self.expire_date - datetime.utcnow().date()).days
@@ -32,5 +30,5 @@ class UserIngredient(db.Model):
             'category': self.category,
             'expire_date': self.expire_date.strftime('%Y-%m-%d'),
             'days_left': days_left,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         }

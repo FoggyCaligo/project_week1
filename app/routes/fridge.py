@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
-from app import db
+from extensions import db
 from app.models.ingredient import UserIngredient
 
 fridge_bp = Blueprint('fridge', __name__, url_prefix='/api/fridge')

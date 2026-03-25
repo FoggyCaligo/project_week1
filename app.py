@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from extensions import db
+from app.models.user import User
+from app.models.bookmark import Bookmark
+from app.models.socialPost import SocialPost
+from app.models.ingredient import UserIngredient
+
 from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -25,7 +31,7 @@ from service.recipeDetailService import RecipeDetailService
 app = Flask(__name__)
 
 # ==== [팀원2] 블루프린트 및 DB 연동 ====
-from app import db
+from extensions import db
 app.config.from_object("config.Config")
 db.init_app(app)
 
@@ -39,7 +45,6 @@ app.register_blueprint(fridge_views_bp)
 db_instance = Database()
 recipe_repo = RecipeDetailRepository(db_instance)
 recipe_service = RecipeDetailService(recipe_repo)
-app.config["SECRET_KEY"] = "change-this-secret-key"
 app.config["UPLOAD_FOLDER"] = str(Path("static") / "uploads")
 
 Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
@@ -50,29 +55,25 @@ ingredientAliasMap = {
     "계란": "계란",
     "파": "대파",
     "대파": "대파",
-    "양파": "양파",
-    "두부": "두부",
-    "우유": "우유",
-    "김치": "김치",
-    "돼지고기": "돼지고기",
     "소고기": "소고기",
+    "쇠고기": "소고기",
     "밥": "밥",
-    "마늘": "마늘",
-    "감자": "감자",
-    "당근": "당근",
-    "애호박": "애호박",
-    "버터": "버터",
+    "쌀밥":"밥",
+    "마가린":"마가린",
+    "마아가린":"마가린",
     "간장": "간장",
+    "진간장": "간장",
+    "양조간장": "간장",
 }
 
 
 recipeCatalog = []
 
-
+#TODO: 실제 DB 연동으로 변경 필요
 users = []
-userIngredients = []
 bookmarks = []
 socialPosts = []
+userIngredients = []
 
 
 def getNow() -> datetime:
@@ -102,12 +103,10 @@ def getNextID(targetList: list[dict]) -> int:
 
 
 def findUserByID(userID: int) -> dict | None:
-    return next((user for user in users if user["id"] == userID), None)
-
+    return User.query.get(userID)
 
 def findUserByUserName(userName: str) -> dict | None:
-    return next((user for user in users if user["userName"] == userName), None)
-
+    return User.query.filter_by(user_name=userName).first()
 
 def getCurrentUser() -> dict | None:
     userID = session.get("userID")
@@ -318,77 +317,17 @@ def buildFridgeSummary(userID: int) -> dict:
         "recommendCount": len([item for item in recommendedList if item["matchPercent"] > 0]),
     }
 
-
 def seedDemoData():
-    if users:
+    if User.query.filter_by(user_name="demo").first():
         return
 
-    demoUser = {
-        "id": 1,
-        "userName": "demo",
-        "passwordHash": generate_password_hash("demo1234"),
-        "nickName": "데모사용자",
-        "createdAt": getNow(),
-    }
-    users.append(demoUser)
-
-    userIngredients.extend(
-        [
-            {
-                "id": 1,
-                "userID": 1,
-                "ingredientName": "달걀",
-                "normalizedName": "계란",
-                "expireDate": date.today(),
-                "createdAt": getNow(),
-            },
-            {
-                "id": 2,
-                "userID": 1,
-                "ingredientName": "두부",
-                "normalizedName": "두부",
-                "expireDate": date.today(),
-                "createdAt": getNow(),
-            },
-            {
-                "id": 3,
-                "userID": 1,
-                "ingredientName": "파",
-                "normalizedName": "대파",
-                "expireDate": date.today(),
-                "createdAt": getNow(),
-            },
-            {
-                "id": 4,
-                "userID": 1,
-                "ingredientName": "김치",
-                "normalizedName": "김치",
-                "expireDate": date.today(),
-                "createdAt": getNow(),
-            },
-        ]
+    demoUser = User(
+        user_name="demo",
+        password_hash=generate_password_hash("demo1234"),
+        nick_name="데모사용자",
     )
-
-    bookmarks.append(
-        {
-            "id": 1,
-            "userID": 1,
-            "recipeID": "R003",
-            "createdAt": getNow(),
-        }
-    )
-
-    socialPosts.append(
-        {
-            "id": 1,
-            "userID": 1,
-            "recipeID": "R003",
-            "title": "간단하게 두부부침",
-            "content": "재료가 적게 들어서 빠르게 만들기 좋았습니다.",
-            "imagePath": "",
-            "createdAt": getNow(),
-        }
-    )
+    db.session.add(demoUser)
+    db.session.commit()
 
 
 seedDemoData()
@@ -433,7 +372,6 @@ def searchPage():
 
     return render_template("recommend.html", recipes=recipes)
 
-
 @app.route("/login", methods=["GET", "POST"])
 def loginPage():
     if request.method == "POST":
@@ -441,16 +379,15 @@ def loginPage():
         password = request.form.get("password", "").strip()
 
         foundUser = findUserByUserName(userName)
-        if foundUser is None or not check_password_hash(foundUser["passwordHash"], password):
+        if foundUser is None or not check_password_hash(foundUser.password_hash, password):
             flash("아이디 또는 비밀번호가 올바르지 않습니다.", "error")
             return redirect(url_for("loginPage"))
 
-        session["userID"] = foundUser["id"]
+        session["userID"] = foundUser.id
         flash("로그인되었습니다.", "success")
         return redirect(url_for("home"))
 
     return render_template("login.html")
-
 
 @app.route("/signup", methods=["GET", "POST"])
 def signupPage():
@@ -472,20 +409,18 @@ def signupPage():
             flash("이미 사용 중인 아이디입니다.", "error")
             return redirect(url_for("signupPage"))
 
-        newUser = {
-            "id": getNextID(users),
-            "userName": userName,
-            "passwordHash": generate_password_hash(password),
-            "nickName": nickName,
-            "createdAt": getNow(),
-        }
-        users.append(newUser)
+        newUser = User(
+            user_name=userName,
+            password_hash=generate_password_hash(password),
+            nick_name=nickName,
+        )
+        db.session.add(newUser)
+        db.session.commit()
 
         flash("회원가입이 완료되었습니다. 로그인해주세요.", "success")
         return redirect(url_for("loginPage"))
 
     return render_template("signup.html")
-
 
 @app.route("/logout")
 def logout():
@@ -585,41 +520,30 @@ def recipeDetailPage(recipeID: str):
 
     return render_template("recipe_detail.html", recipe=recipe)
 
-
 @app.route("/bookmarks/add/<recipeID>", methods=["POST"])
 def addBookmark(recipeID: str):
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
         return redirectResponse
 
-    recipeData = getRecipeByID(recipeID)
-    if recipeData is None:
-        flash("북마크할 레시피를 찾지 못했습니다.", "error")
-        return redirect(url_for("recommendPage"))
+    duplicatedBookmark = Bookmark.query.filter_by(
+        user_id=currentUser.id,
+        recipe_id=recipeID
+    ).first()
 
-    duplicatedBookmark = next(
-        (
-            item
-            for item in bookmarks
-            if item["userID"] == currentUser["id"] and item["recipeID"] == recipeID
-        ),
-        None,
-    )
     if duplicatedBookmark:
         flash("이미 북마크한 레시피입니다.", "info")
         return redirect(url_for("bookmarksPage"))
 
-    bookmarks.append(
-        {
-            "id": getNextID(bookmarks),
-            "userID": currentUser["id"],
-            "recipeID": recipeID,
-            "createdAt": getNow(),
-        }
+    bookmark = Bookmark(
+        user_id=currentUser.id,
+        recipe_id=recipeID,
     )
+    db.session.add(bookmark)
+    db.session.commit()
+
     flash("북마크에 저장되었습니다.", "success")
     return redirect(url_for("bookmarksPage"))
-
 
 @app.route("/bookmarks")
 def bookmarksPage():
@@ -642,30 +566,26 @@ def bookmarksPage():
 
     return render_template("bookmarks.html", bookmarkedRecipes=bookmarkedRecipes)
 
-
 @app.route("/bookmarks/remove/<recipeID>", methods=["POST"])
 def removeBookmark(recipeID: str):
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
         return redirectResponse
 
-    targetBookmark = next(
-        (
-            item
-            for item in bookmarks
-            if item["userID"] == currentUser["id"] and item["recipeID"] == recipeID
-        ),
-        None,
-    )
+    targetBookmark = Bookmark.query.filter_by(
+        user_id=currentUser.id,
+        recipe_id=recipeID
+    ).first()
 
     if targetBookmark is None:
         flash("삭제할 북마크를 찾지 못했습니다.", "error")
         return redirect(url_for("bookmarksPage"))
 
-    bookmarks.remove(targetBookmark)
+    db.session.delete(targetBookmark)
+    db.session.commit()
+
     flash("북마크가 삭제되었습니다.", "success")
     return redirect(url_for("bookmarksPage"))
-
 
 @app.route("/social")
 def socialPage():
@@ -705,7 +625,6 @@ def socialPage():
         currentUser=currentUser,
     )
 
-
 @app.route("/social/create", methods=["POST"])
 def createSocialPost():
     currentUser, redirectResponse = requireLogin()
@@ -715,41 +634,24 @@ def createSocialPost():
     recipeID = request.form.get("recipeID", "").strip()
     title = request.form.get("title", "").strip()
     content = request.form.get("content", "").strip()
-    imageFile = request.files.get("imageFile")
+    imagePath = ""
 
     if not recipeID or not title or not content:
-        flash("레시피, 제목, 내용을 모두 입력해주세요.", "error")
+        flash("모든 항목을 입력해주세요.", "error")
         return redirect(url_for("socialPage"))
 
-    recipeData = getRecipeByID(recipeID)
-    if recipeData is None:
-        flash("선택한 레시피를 찾지 못했습니다.", "error")
-        return redirect(url_for("socialPage"))
-
-    imagePath = ""
-    if imageFile and imageFile.filename:
-        originalName = secure_filename(imageFile.filename)
-        suffix = Path(originalName).suffix
-        savedName = f"{uuid4().hex}{suffix}"
-        savedPath = Path(app.config["UPLOAD_FOLDER"]) / savedName
-        imageFile.save(savedPath)
-        imagePath = f"/static/uploads/{savedName}"
-
-    socialPosts.append(
-        {
-            "id": getNextID(socialPosts),
-            "userID": currentUser["id"],
-            "recipeID": recipeID,
-            "title": title,
-            "content": content,
-            "imagePath": imagePath,
-            "createdAt": getNow(),
-        }
+    post = SocialPost(
+        user_id=currentUser.id,
+        recipe_id=recipeID,
+        title=title,
+        content=content,
+        image_path=imagePath,
     )
+    db.session.add(post)
+    db.session.commit()
 
-    flash("후기가 등록되었습니다.", "success")
+    flash("게시글이 등록되었습니다.", "success")
     return redirect(url_for("socialPage"))
-
 
 if __name__ == "__main__":
     app.run(debug=True)
