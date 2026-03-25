@@ -59,6 +59,9 @@ python init_db.py
 ```
 > 출력결과: `Database tables created successfully!` 메시지가 나오면 성공입니다.
 
+**(❗️주의/Troubleshooting)**
+만약 로컬에서 서버 실행 후 `Table 'cloud33.user_ingredients' doesn't exist` 와 같은 DB 관련 에러(500)가 발생한다면, 원격 DB에서 테이블이 지워졌거나 구조가 맞지 않는 상태일 수 있습니다. 이럴 때는 위 명령(`python init_db.py`)을 다시 한번 실행하여 테이블을 재성성해주시면 깔끔하게 해결됩니다!
+
 ---
 
 ## 3. 웹 서버 실행
