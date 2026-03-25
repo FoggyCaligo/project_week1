@@ -176,16 +176,16 @@ class FridgeService:
             db.session.rollback()
         
         # 모델의 카멜 케이스 속성명에 맞게 매핑
-        new_item = UserIngredient(
-            userID=user_id,
-            ingredientName=ingredient_name,
-            normalizedName=normalized_name,
-            expireDate=expire_date
-        )
-        
         try:
-            db.session.add(new_item)
+            from sqlalchemy import text
+            db.session.execute(
+                text("INSERT INTO userIngredients (userID, ingredientName, normalizedName, expireDate) VALUES (:uid, :name, :norm, :exp)"),
+                {"uid": user_id, "name": ingredient_name, "norm": normalized_name, "exp": expire_date}
+            )
             db.session.commit()
+            
+            # 방금 추가된 항목을 다시 조회
+            new_item = UserIngredient.query.filter_by(userID=user_id, ingredientName=ingredient_name).order_by(UserIngredient.ID.desc()).first()
             return True, new_item
         except Exception as e:
             db.session.rollback()
@@ -208,13 +208,17 @@ class FridgeService:
             return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
 
         # 모델 속성 업데이트 (카멜 케이스)
-        item.ingredientName = ingredient_name
-        item.normalizedName = ingredient_name.lower().replace(" ", "")
-        item.expireDate = expire_date
-        
         try:
+            from sqlalchemy import text
+            db.session.execute(
+                text("UPDATE userIngredients SET ingredientName = :name, normalizedName = :norm, expireDate = :exp WHERE ID = :id AND userID = :uid"),
+                {"name": ingredient_name, "norm": ingredient_name.lower().replace(" ", ""), "exp": expire_date, "id": ingredient_id, "uid": user_id}
+            )
             db.session.commit()
-            return True, item
+            
+            # 수정된 항목 다시 조회
+            updated_item = UserIngredient.query.filter_by(ID=ingredient_id, userID=user_id).first()
+            return True, updated_item
         except Exception as e:
             db.session.rollback()
             return False, f"데이터베이스 저장 오류: {str(e)}"
@@ -228,7 +232,8 @@ class FridgeService:
             return False, "해당 재료를 찾을 수 없거나 삭제 권한이 없습니다."
             
         try:
-            db.session.delete(item)
+            from sqlalchemy import text
+            db.session.execute(text("DELETE FROM userIngredients WHERE ID = :id AND userID = :uid"), {"id": ingredient_id, "uid": user_id})
             db.session.commit()
             return True, "삭제 완료"
         except Exception as e:
