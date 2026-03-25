@@ -9,10 +9,10 @@ from app.common import (
     getNextID,
     getNow,
     socialPosts,
+    bookmarks,
     findUserByID,
     getRecipeByID,
     formatDateTime,
-    recipeCatalog,
 )
 
 social_bp = Blueprint("social", __name__)
@@ -20,15 +20,28 @@ social_bp = Blueprint("social", __name__)
 def isAllowedImageFile(fileName: str) -> bool:
     allowedExtensions = {"png", "jpg", "jpeg", "gif", "webp"}
     return "." in fileName and fileName.rsplit(".", 1)[1].lower() in allowedExtensions
-
 @social_bp.route("/social")
 def socialPage():
     currentUser = getCurrentUser()
 
-    availableRecipes = [
-        {"recipeID": recipe["recipeID"], "recipeName": recipe["recipeName"]}
-        for recipe in recipeCatalog
-    ]
+    availableRecipes = []
+
+    if currentUser:
+        userBookmarkList = sorted(
+            [item for item in bookmarks if item["userID"] == currentUser["id"]],
+            key=lambda item: item["createdAt"],
+            reverse=True,
+        )
+
+        for bookmarkData in userBookmarkList:
+            recipeData = getRecipeByID(bookmarkData["recipeID"])
+            if recipeData:
+                availableRecipes.append(
+                    {
+                        "recipeID": recipeData["recipeID"],
+                        "recipeName": recipeData["recipeName"],
+                    }
+                )
 
     socialPostViewList = []
     for postData in sorted(socialPosts, key=lambda item: item["createdAt"], reverse=True):
@@ -69,8 +82,18 @@ def createSocialPost():
         flash("레시피, 제목, 내용을 모두 입력해주세요.", "error")
         return redirect(url_for("social.socialPage"))
 
-    if getRecipeByID(recipeID) is None:
+    recipeData = getRecipeByID(recipeID)
+    if recipeData is None:
         flash("선택한 레시피를 찾을 수 없습니다.", "error")
+        return redirect(url_for("social.socialPage"))
+
+    isBookmarkedRecipe = any(
+        item["userID"] == currentUser["id"] and item["recipeID"] == recipeID
+        for item in bookmarks
+    )
+
+    if not isBookmarkedRecipe:
+        flash("북마크한 레시피만 후기로 등록할 수 있습니다.", "error")
         return redirect(url_for("social.socialPage"))
 
     imagePath = ""
