@@ -47,6 +47,23 @@ def get_fridge_items(user_id):
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
 
+@fridge_bp.route('/recipes', methods=['GET'])
+def get_recommended_recipes():
+    """비동기 방식으로 추천 레시피 가져오기"""
+    current_user = get_current_user()
+    if not current_user:
+        return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
+        
+    user_id = current_user.get('id')
+    try:
+        recipes = FridgeService.get_recommended_recipes(user_id)
+        return jsonify({
+            "ok": True,
+            "recipes": recipes
+        }), 200
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
 @fridge_bp.route('/item/<int:ingredient_id>', methods=['GET'])
 def get_fridge_item(ingredient_id):
     """단일 재료 상세 조회"""

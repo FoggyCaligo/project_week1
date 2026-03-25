@@ -33,21 +33,11 @@ def fridge_index():
     totalCount = len(ingredients)
     expiringCount = sum(1 for item in ingredients if item['days_left'] is not None and item['days_left'] <= 3)
 
-    # 2. 추천 레시피 가져오기 (공공 API 연동)
-    recommended_recipes = FridgeService.get_recommended_recipes(user_id)
-    recommendCount = len(recommended_recipes)
-
-    fridgeSummary = {
-        'totalCount': totalCount,
-        'expiringCount': expiringCount,
-        'recommendCount': recommendCount
-    }
-
     return render_template(
         'fridge.html',
-        fridgeSummary=fridgeSummary,
-        ingredients=ingredients,
-        recommended_recipes=recommended_recipes
+        totalCount=totalCount,
+        expiringCount=expiringCount,
+        ingredients=ingredients
     )
 
 @fridge_views_bp.route('/fridge/add', methods=['POST'])

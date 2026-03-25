@@ -51,33 +51,28 @@
         </div>
 
         <div class="card">
-            <ul id="itemList" style="list-style: none; padding: 0; margin: 0;">
+            <!-- 로딩 상태 표시 -->
+            <div id="loadingState" class="emptyState" style="padding: 24px;">
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px;"></div>
+            </div>
+            
+            <ul id="itemList" style="list-style: none; padding: 0; margin: 0; display: none;">
                 <!-- 스크립트를 통해 아이템 렌더링 -->
             </ul>
         </div>
 
-        {% if recommended_recipes %}
-        <div style="margin-top: 48px;">
+        <div id="recipeSection" style="margin-top: 48px; display: none;">
             <div class="sectionHeader">
                 <h2 class="sectionTitle" style="font-size: 20px;">💡 이런 레시피는 어때요?</h2>
                 <p class="sectionDesc">유통기한이 임박한 재료를 활용한 추천 요리입니다.</p>
             </div>
             
-            <div class="grid3">
-                {% for recipe in recommended_recipes %}
-                <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" style="text-decoration: none; color: inherit;">
-                    <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
-                        <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
-                        <div class="cardBody" style="padding: 16px;">
-                            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">{{ recipe.recipeName }}</h3>
-                            <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4;">{{ recipe.description }}</p>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
+            <div class="grid3" id="recipeList">
+                <!-- 스크립트를 통해 추천 레시피 렌더링 -->
             </div>
         </div>
-        {% endif %}
     </div>
 </section>
 
@@ -148,7 +143,10 @@
     </div>
 </div>
 
-<style>
+    <!-- 폰트어썸 아이콘 링크 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
     .item-row {
         display: flex;
         justify-content: space-between;
@@ -195,27 +193,59 @@
     .badge-success { background-color: #2ecc71; color: white; }
     .badge-warning { background-color: #f1c40f; color: white; }
     .badge-danger { background-color: #e74c3c; color: white; }
+
+    /* 스켈레톤 로딩 스타일 추가 */
+    .skeleton-text {
+        background: #e9ecef;
+        border-radius: 4px;
+        animation: pulse 1.5s infinite ease-in-out;
+        color: transparent;
+    }
+
+    .skeletonCard {
+        background: #fff;
+        border-radius: var(--radiusLg);
+        height: 240px;
+        animation: pulse 1.5s infinite ease-in-out;
+        box-shadow: var(--shadowSoft);
+    }
+
+    @keyframes pulse {
+        0% { background-color: #f1f3f5; }
+        50% { background-color: #e9ecef; }
+        100% { background-color: #f1f3f5; }
+    }
 </style>
 
     <script>
         const USER_ID = {{ session.get('userID', 1) }};
 
-        // 냉장고 목록 불러오기
+        // 재료 추가/수정/삭제 시 레시피 새로고침 추가
         async function loadItems() {
+            const sort = document.getElementById('sortSelect').value;
+            const list = document.getElementById('itemList');
+            const loadingState = document.getElementById('loadingState');
+            
+            // 로딩 UI 표시, 목록 숨김
+            loadingState.style.display = 'block';
+            list.style.display = 'none';
+            
             try {
-                const sort = document.getElementById('sortSelect').value;
                 const res = await fetch(`/api/fridge/${USER_ID}?sort=${sort}`);
                 const data = await res.json();
-                const list = document.getElementById('itemList');
                 list.innerHTML = '';
 
                 if (!res.ok) {
-                    list.innerHTML = `<li class="empty-msg">${data.message || '데이터를 불러오지 못했습니다.'}</li>`;
+                    loadingState.innerHTML = `<p style="color:var(--colorTextSub);">${data.message || '데이터를 불러오지 못했습니다.'}</p>`;
                     return;
                 }
+                
+                // 데이터 로딩 완료 시 처리
+                loadingState.style.display = 'none';
+                list.style.display = 'block';
 
                 if (!data.items || data.items.length === 0) {
-                    list.innerHTML = '<li class="empty-msg">냉장고가 텅 비어있습니다.<br>위에서 식재료를 추가해보세요!</li>';
+                    list.innerHTML = '<div class="emptyState">냉장고가 텅 비어있습니다.<br>위에서 식재료를 추가해보세요!</div>';
                     return;
                 }
 
@@ -234,7 +264,9 @@
                     }
 
                     const li = document.createElement('li');
-                    li.className = 'item-row';
+                    li.style = "padding: 16px 20px; border-bottom: 1px solid var(--colorBorder); display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; cursor: pointer;";
+                    li.onmouseover = function() { this.style.backgroundColor = '#f8f9fa'; };
+                    li.onmouseout = function() { this.style.backgroundColor = 'transparent'; };
                     
                     // 뱃지 인라인 스타일 적용
                     let badgeStyle = '';
@@ -246,19 +278,35 @@
                         badgeStyle = 'background-color: #e74c3c; color: white;';
                     }
 
+                    // 아이콘 클래스 결정
+                    let iconClass = 'fa-solid fa-leaf'; // 기본(채소 등)
+                    if (item.category === '과일') iconClass = 'fa-solid fa-apple-whole';
+                    else if (item.category === '육류') iconClass = 'fa-solid fa-drumstick-bite';
+                    else if (item.category === '수산물') iconClass = 'fa-solid fa-fish';
+                    else if (item.category === '유제품') iconClass = 'fa-solid fa-cheese';
+                    else if (item.category === '가공식품') iconClass = 'fa-solid fa-box-open';
+                    else if (item.category === '기타') iconClass = 'fa-solid fa-utensils';
+
                     li.innerHTML = `
-                        <div class="item-info-clickable" onclick="openModal(${item.id})">
-                            <div class="item-name-wrap">
-                                ${item.ingredient_name}
-                                <span class="badge-dday" style="${badgeStyle}">${badgeText}</span>
+                        <div style="flex: 1; display: flex; align-items: center; gap: 16px; cursor: pointer;" onclick="openModal(${item.id})">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #f1f3f5; display: flex; align-items: center; justify-content: center; color: var(--colorPrimary); font-size: 18px;">
+                                <i class="${iconClass}"></i>
                             </div>
-                            <div class="item-meta-wrap">
-                                <span>${item.category}</span>
-                                <span>|</span>
-                                <span>${item.expire_date}</span>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 16px; font-weight: 600; color: var(--colorText);">${item.ingredient_name}</span>
+                                    <span class="badge-dday" style="${badgeStyle}">${badgeText}</span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--colorTextSub); display: flex; gap: 8px; align-items: center;">
+                                    <span>${item.category}</span>
+                                    <span style="color: #dee2e6;">|</span>
+                                    <span><i class="fa-regular fa-clock" style="margin-right: 4px;"></i>${item.expire_date}</span>
+                                </div>
                             </div>
                         </div>
-                        <button class="btn btnGhost" style="color: #e74c3c; padding: 8px 16px;" onclick="deleteItem(${item.id})">삭제</button>
+                        <button class="btn btnGhost" style="color: #e74c3c; padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="deleteItem(${item.id})" title="삭제">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     `;
                     list.appendChild(li);
                 });
@@ -281,7 +329,10 @@
                 document.getElementById('detailName').innerText = item.ingredient_name;
                 document.getElementById('detailCategory').innerText = item.category;
                 document.getElementById('detailExpire').innerText = item.expire_date;
-                document.getElementById('detailCreated').innerText = item.created_at;
+                
+                // 등록일시는 YYYY-MM-DD 만 표시
+                const createdDate = item.created_at ? item.created_at.split(' ')[0] : '-';
+                document.getElementById('detailCreated').innerText = createdDate;
 
                 let badgeClass = 'badge-success';
                 let badgeText = `D-${item.days_left}`;
@@ -318,6 +369,10 @@
 
                 cancelEdit(); // 상세정보 보기 모드로 초기화
                 document.getElementById('itemModal').style.display = 'flex';
+                
+                // 모달 기본 높이 설정 (스크롤 없도록)
+                document.querySelector('#itemModal .card').style.maxHeight = 'auto';
+                document.querySelector('#itemModal .card').style.overflowY = 'visible';
             } catch (e) {
                 console.error(e);
             }
@@ -359,6 +414,7 @@
                 if (res.ok) {
                     closeModal();
                     loadItems(); 
+                    loadRecommendedRecipes();
                 } else {
                     const data = await res.json();
                     alert(data.message || '수정에 실패했습니다.');
@@ -388,6 +444,7 @@
                 if (res.ok) {
                     document.getElementById('addForm').reset();
                     loadItems(); // 목록 새로고침
+                    loadRecommendedRecipes(); // 추천 레시피 새로고침
                 } else {
                     const data = await res.json();
                     alert(data.message || '추가에 실패했습니다.');
@@ -404,6 +461,8 @@
                 const res = await fetch(`/api/fridge/delete/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     loadItems();
+                    loadRecommendedRecipes();
+                    closeModal(); // 모달이 열려있다면 닫기
                 } else {
                     alert('삭제에 실패했습니다.');
                 }
@@ -412,7 +471,51 @@
             }
         }
 
+        async function loadRecommendedRecipes() {
+            const list = document.getElementById('recipeList');
+            const section = document.getElementById('recipeSection');
+            
+            // 로딩 스켈레톤 UI 표시
+            section.style.display = 'block';
+            list.innerHTML = `
+                <div class="skeletonCard"></div>
+                <div class="skeletonCard"></div>
+                <div class="skeletonCard"></div>
+            `;
+            
+            try {
+                const res = await fetch('/api/fridge/recipes');
+                const data = await res.json();
+                
+                if (res.ok && data.recipes && data.recipes.length > 0) {
+                    list.innerHTML = '';
+                    
+                    data.recipes.forEach(recipe => {
+                        const a = document.createElement('a');
+                        a.href = `/recipes/${recipe.recipeID}`;
+                        a.style = "text-decoration: none; color: inherit;";
+                        a.innerHTML = `
+                            <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
+                                <img src="${recipe.imageUrl}" alt="${recipe.recipeName}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
+                                <div class="cardBody" style="padding: 16px;">
+                                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">${recipe.recipeName}</h3>
+                                    <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4;">${recipe.description}</p>
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(a);
+                    });
+                } else {
+                    section.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("추천 레시피 로드 오류:", err);
+                section.style.display = 'none';
+            }
+        }
+
         // 페이지 로드 시 최초 데이터 조회
         loadItems();
+        loadRecommendedRecipes();
     </script>
 {% endblock %}
