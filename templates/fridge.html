@@ -351,16 +351,17 @@
 
                 groupedArray.forEach(group => {
                     let badgeClass = 'badge-success';
-                    let badgeText = `D-${group.days_left}`;
-                    
-                    if (group.days_left < 0) {
+                    let badgeText = '';
+
+                    // 임박(3일 이내) 혹은 지남(0 이하)인 항목 수 세기
+                    const imminentCount = group.instances.filter(inst => inst.days_left <= 3).length;
+
+                    if (imminentCount > 0) {
                         badgeClass = 'badge-danger';
-                        badgeText = `경과 (D+${Math.abs(group.days_left)})`;
-                    } else if (group.days_left <= 3) {
-                        badgeClass = 'badge-warning'; 
-                    } else if (group.days_left === 0) {
-                        badgeClass = 'badge-danger';
-                        badgeText = `D-Day`;
+                        badgeText = `유통기한 임박: ${imminentCount}개`;
+                    } else {
+                        badgeClass = 'badge-success';
+                        badgeText = `신선 보관중`;
                     }
 
                     let badgeStyle = '';
@@ -389,7 +390,6 @@
                         <div style="font-size: 17px; font-weight: 800; color: var(--colorText); margin-bottom: 8px;">${group.ingredient_name}</div>
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
                             <span class="badge-dday" style="${badgeStyle}; font-size: 11px; padding: 4px 10px;">${badgeText}</span>
-                            <span style="font-size: 13px; color: var(--colorTextSub); font-weight: 500;">${group.expire_date}까지</span>
                         </div>
                     `;
                     list.appendChild(li);
