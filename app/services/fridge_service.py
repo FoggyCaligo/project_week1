@@ -54,3 +54,47 @@ class FridgeService:
         except Exception as e:
             db.session.rollback()
             return False, f"데이터베이스 삭제 오류: {str(e)}"
+
+    @staticmethod
+    def get_recommended_recipes(user_id):
+        """
+        사용자의 냉장고 재료 중 유통기한이 임박한 재료를 기반으로
+        공공데이터 API(COOKRCP01)를 활용하여 추천 레시피를 가져옵니다.
+        """
+        # 1. 유통기한이 가장 임박한 재료 최대 2개 추출
+        items = UserIngredient.query.filter_by(user_id=user_id).order_by(UserIngredient.expire_date.asc()).limit(2).all()
+        
+        if not items:
+            return []
+            
+        # 재료명 추출 (예: '새우', '가지')
+        ingredient_names = [item.ingredient_name for item in items]
+        search_query = ",".join(ingredient_names)
+        
+        # 2. 공공 API 호출
+        api_key = "3601fcadc33549809411"  # 발급받은 OpenAPI 인증키
+        url = f"https://openapi.foodsafetykorea.go.kr/api/{api_key}/COOKRCP01/json/1/3/RCP_PARTS_DTLS=\"{search_query}\""
+        
+        import requests
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            
+            if "COOKRCP01" in data and "row" in data["COOKRCP01"]:
+                recipes = data["COOKRCP01"]["row"]
+                
+                # 프론트엔드에 전달하기 좋게 가공
+                recommended = []
+                for r in recipes:
+                    recommended.append({
+                        "recipeID": r.get("RCP_SEQ"),
+                        "recipeName": r.get("RCP_NM"),
+                        "imageUrl": r.get("ATT_FILE_NO_MAIN"),
+                        "description": r.get("RCP_WAY2") + " | " + r.get("RCP_PAT2"),
+                    })
+                return recommended
+            return []
+        except Exception as e:
+            print(f"API 호출 오류: {e}")
+            return []
+

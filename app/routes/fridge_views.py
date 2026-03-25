@@ -17,13 +17,16 @@ def fridge_index():
         
     user_id = get_current_user_id()
     
-    # 서비스 계층을 통해 데이터 조회
+    # 1. 서비스 계층을 통해 데이터 조회
     items = FridgeService.get_user_ingredients(user_id)
     ingredients = [item.to_dict() for item in items]
     
     totalCount = len(ingredients)
     expiringCount = sum(1 for item in ingredients if item['days_left'] is not None and item['days_left'] <= 3)
-    recommendCount = 3 # 임시 (추후 팀원3 API 연동)
+
+    # 2. 추천 레시피 가져오기 (공공 API 연동)
+    recommended_recipes = FridgeService.get_recommended_recipes(user_id)
+    recommendCount = len(recommended_recipes)
 
     fridgeSummary = {
         'totalCount': totalCount,
@@ -34,15 +37,16 @@ def fridge_index():
     return render_template(
         'fridge.html',
         fridgeSummary=fridgeSummary,
-        ingredients=ingredients
+        ingredients=ingredients,
+        recommended_recipes=recommended_recipes
     )
 
 @fridge_views_bp.route('/fridge/add', methods=['POST'])
 def add_ingredient():
     """웹 폼(Form)을 통한 식재료 추가"""
     user_id = get_current_user_id()
-    ingredient_name = request.form.get("ingredientName", "").strip()
-    expire_date_str = request.form.get("expireDate", "").strip()
+    ingredient_name = request.form.get("ingredient_name", "").strip()
+    expire_date_str = request.form.get("expire_date", "").strip()
     category = request.form.get("category", "기타").strip()
 
     # 서비스 계층 호출

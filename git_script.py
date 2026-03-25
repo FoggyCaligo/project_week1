@@ -15,5 +15,5 @@ def run(cmd):
 
 run('git status -sb')
 run('git add .')
-run('git -c user.name="장민재" -c user.email="jang@example.com" commit -m "[local_jang>dev] 수정,추가 : app.py 코드를 routes, models, services로 분리하여 블루프린트 마이그레이션 (팀 컨벤션 반영) 및 /fridge 로그아웃 500 버그 수정"')
+run('git -c user.name="장민재" -c user.email="jang@example.com" commit -m "[local_jang>dev] 추가 : 공공데이터 API(COOKRCP01) 활용 재료 매칭 추천 알고리즘 및 템플릿 연동 구현 (팀원3 파트 연계)"')
 run('git log -3 --oneline')
