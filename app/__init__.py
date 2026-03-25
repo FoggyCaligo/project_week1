@@ -59,8 +59,9 @@ def create_app():
     init_database(app)
 
     # 이미지 업로드 폴더 세팅 (상위 폴더의 static 기준)
-    app.config["UPLOAD_FOLDER"] = str(Path("../static") / "uploads")
+    app.config["UPLOAD_FOLDER"] = str(Path(app.static_folder) / "uploads")
     Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
+
 
     # 블루프린트 등록
     from app.routes.main import main_bp
