@@ -83,7 +83,12 @@
                 const list = document.getElementById('itemList');
                 list.innerHTML = '';
 
-                if (data.items.length === 0) {
+                if (!res.ok) {
+                    list.innerHTML = `<li class="empty-msg">${data.message || '데이터를 불러오지 못했습니다.'}</li>`;
+                    return;
+                }
+
+                if (!data.items || data.items.length === 0) {
                     list.innerHTML = '<li class="empty-msg">냉장고가 텅 비어있습니다.<br>위에서 식재료를 추가해보세요!</li>';
                     return;
                 }
