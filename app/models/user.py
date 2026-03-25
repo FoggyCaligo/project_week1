@@ -5,11 +5,11 @@ from extensions import db
 class User(db.Model):
     __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_name = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    nick_name = db.Column(db.String(50), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    id = db.Column("ID", db.Integer, primary_key=True, autoincrement=True)
+    userName = db.Column("userName", db.String(255), unique=True, nullable=False, index=True)
+    passwordHash = db.Column("passwordHash", db.String(255), nullable=False)
+    nickName = db.Column("nickName", db.String(255), nullable=False)
+    createdAt = db.Column("createdAt", db.DateTime, default=datetime.utcnow, nullable=False)
 
     ingredients = db.relationship(
         "UserIngredient",
@@ -23,7 +23,7 @@ class User(db.Model):
         lazy=True,
         cascade="all, delete-orphan",
     )
-    social_posts = db.relationship(
+    socialPosts = db.relationship(
         "SocialPost",
         backref="user",
         lazy=True,

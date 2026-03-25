@@ -83,19 +83,19 @@
             {% for ingredient in ingredients %}
             <div class="listItem">
               <div class="listItemMain">
-                <strong>{{ ingredient.ingredient_name }}</strong>
+                <strong>{{ ingredient.ingredientName }}</strong>
                 <span class="listItemSub">
-                  유통기한: {{ ingredient.expire_date }}
-                  {% if ingredient.normalized_name %}
-                    · 표준명: {{ ingredient.normalized_name }}
+                  유통기한: {{ ingredient.expireDate }}
+                  {% if ingredient.normalizedName %}
+                    · 표준명: {{ ingredient.normalizedName }}
                   {% endif %}
                 </span>
               </div>
 
               <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                {% if ingredient.days_left is not none and ingredient.days_left < 0 %}
+                {% if ingredient.daysLeft is not none and ingredient.daysLeft < 0 %}
                   <span class="tag tagDanger">기한 경과</span>
-                {% elif ingredient.days_left is not none and ingredient.days_left <= 3 %}
+                {% elif ingredient.daysLeft is not none and ingredient.daysLeft <= 3 %}
                   <span class="tag tagWarning">임박</span>
                 {% else %}
                   <span class="tag tagSuccess">안전</span>

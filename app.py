@@ -106,7 +106,7 @@ def findUserByID(userID: int) -> dict | None:
     return User.query.get(userID)
 
 def findUserByUserName(userName: str) -> dict | None:
-    return User.query.filter_by(user_name=userName).first()
+    return User.query.filter_by(userName=userName).first()
 
 def getCurrentUser() -> dict | None:
     userID = session.get("userID")
@@ -318,19 +318,20 @@ def buildFridgeSummary(userID: int) -> dict:
     }
 
 def seedDemoData():
-    if User.query.filter_by(user_name="demo").first():
+    if User.query.filter_by(userName="demo").first():
         return
 
     demoUser = User(
-        user_name="demo",
-        password_hash=generate_password_hash("demo1234"),
-        nick_name="데모사용자",
+        userName="demo",
+        passwordHash=generate_password_hash("demo1234"),
+        nickName="데모사용자",
     )
     db.session.add(demoUser)
     db.session.commit()
 
 
-seedDemoData()
+with app.app_context():
+    seedDemoData()
 
 
 @app.route("/")
@@ -338,9 +339,9 @@ def home():
     currentUser = getCurrentUser()
 
     if currentUser:
-        summary = buildHomeSummary(currentUser["id"])
+        summary = buildHomeSummary(currentUser.id)
         todayRecipes = recipe_service.get_recipe_list(limit=10)
-        expiringIngredients = getUserIngredientList(currentUser["id"])[:5]
+        expiringIngredients = getUserIngredientList(currentUser.id)[:5]
     else:
         summary = {
             "ingredientCount": 0,
@@ -362,7 +363,7 @@ def home():
 def searchPage():
     currentUser = getCurrentUser()
     searchKeyword = request.args.get("q", "").strip()
-    userID = currentUser["id"] if currentUser else None
+    userID = currentUser.id if currentUser else None
 
     recipes = buildRecommendedRecipeList(
         userID=userID,
@@ -379,7 +380,7 @@ def loginPage():
         password = request.form.get("password", "").strip()
 
         foundUser = findUserByUserName(userName)
-        if foundUser is None or not check_password_hash(foundUser.password_hash, password):
+        if foundUser is None or not check_password_hash(foundUser.passwordHash, password):
             flash("아이디 또는 비밀번호가 올바르지 않습니다.", "error")
             return redirect(url_for("loginPage"))
 
@@ -410,9 +411,9 @@ def signupPage():
             return redirect(url_for("signupPage"))
 
         newUser = User(
-            user_name=userName,
-            password_hash=generate_password_hash(password),
-            nick_name=nickName,
+            userName=userName,
+            passwordHash=generate_password_hash(password),
+            nickName=nickName,
         )
         db.session.add(newUser)
         db.session.commit()
@@ -435,8 +436,8 @@ def fridgePage():
     if redirectResponse:
         return redirectResponse
 
-    fridgeSummary = buildFridgeSummary(currentUser["id"])
-    ingredients = getUserIngredientList(currentUser["id"])
+    fridgeSummary = buildFridgeSummary(currentUser.id)
+    ingredients = getUserIngredientList(currentUser.id)
 
     return render_template(
         "fridge.html",
@@ -465,7 +466,7 @@ def addIngredient():
 
     newIngredient = {
         "id": getNextID(userIngredients),
-        "userID": currentUser["id"],
+        "userID": currentUser.id,
         "ingredientName": ingredientName,
         "normalizedName": normalizeIngredientName(ingredientName),
         "expireDate": expireDate,
@@ -487,7 +488,7 @@ def deleteIngredient(id: int):
         (
             item
             for item in userIngredients
-            if item["id"] == id and item["userID"] == currentUser["id"]
+            if item["id"] == id and item["userID"] == currentUser.id
         ),
         None,
     )
@@ -527,8 +528,8 @@ def addBookmark(recipeID: str):
         return redirectResponse
 
     duplicatedBookmark = Bookmark.query.filter_by(
-        user_id=currentUser.id,
-        recipe_id=recipeID
+        userID=currentUser.id,
+        recipeID=recipeID
     ).first()
 
     if duplicatedBookmark:
@@ -536,8 +537,8 @@ def addBookmark(recipeID: str):
         return redirect(url_for("bookmarksPage"))
 
     bookmark = Bookmark(
-        user_id=currentUser.id,
-        recipe_id=recipeID,
+        userID=currentUser.id,
+        recipeID=recipeID,
     )
     db.session.add(bookmark)
     db.session.commit()
@@ -551,7 +552,7 @@ def bookmarksPage():
     if redirectResponse:
         return redirectResponse
 
-    userBookmarkList = [item for item in bookmarks if item["userID"] == currentUser["id"]]
+    userBookmarkList = [item for item in bookmarks if item["userID"] == currentUser.id]
     userBookmarkList.sort(key=lambda item: item["createdAt"], reverse=True)
 
     bookmarkedRecipes = []
@@ -560,7 +561,7 @@ def bookmarksPage():
         if recipeData is None:
             continue
 
-        recipeCard = buildRecipeCard(recipeData, currentUser["id"])
+        recipeCard = buildRecipeCard(recipeData, currentUser.id)
         recipeCard["createdAt"] = formatDateTime(bookmarkData["createdAt"])
         bookmarkedRecipes.append(recipeCard)
 
@@ -573,8 +574,8 @@ def removeBookmark(recipeID: str):
         return redirectResponse
 
     targetBookmark = Bookmark.query.filter_by(
-        user_id=currentUser.id,
-        recipe_id=recipeID
+        userID=currentUser.id,
+        recipeID=recipeID
     ).first()
 
     if targetBookmark is None:
@@ -641,11 +642,11 @@ def createSocialPost():
         return redirect(url_for("socialPage"))
 
     post = SocialPost(
-        user_id=currentUser.id,
-        recipe_id=recipeID,
+        userID=currentUser.id,
+        recipeID=recipeID,
         title=title,
         content=content,
-        image_path=imagePath,
+        imagePath=imagePath,
     )
     db.session.add(post)
     db.session.commit()
