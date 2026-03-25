@@ -6,6 +6,7 @@ from urllib.parse import quote_plus
 from uuid import uuid4
 
 from flask import (
+    Blueprint,
     Flask,
     flash,
     redirect,
@@ -16,14 +17,9 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
+from app import db
 
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = "change-this-secret-key"
-app.config["UPLOAD_FOLDER"] = str(Path("static") / "uploads")
-
-Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
-
+test_bp = Blueprint('test', __name__)
 
 ingredientAliasMap = {
     "달걀": "계란",
@@ -243,7 +239,7 @@ def getCurrentUser() -> dict | None:
     return findUserByID(userID)
 
 
-@app.context_processor
+@test_bp.context_processor
 def injectCommonData():
     return {
         "currentUser": getCurrentUser(),
@@ -254,7 +250,7 @@ def requireLogin():
     currentUser = getCurrentUser()
     if currentUser is None:
         flash("로그인이 필요합니다.", "error")
-        return None, redirect(url_for("loginPage"))
+        return None, redirect(url_for("auth.login"))
     return currentUser, None
 
 
@@ -521,7 +517,7 @@ def seedDemoData():
 seedDemoData()
 
 
-@app.route("/")
+@test_bp.route("/")
 def home():
     currentUser = getCurrentUser()
 
@@ -546,7 +542,7 @@ def home():
     )
 
 
-@app.route("/search")
+@test_bp.route("/search")
 def searchPage():
     currentUser = getCurrentUser()
     searchKeyword = request.args.get("q", "").strip()
@@ -561,67 +557,67 @@ def searchPage():
     return render_template("recommend.html", recipes=recipes)
 
 
-@app.route("/login", methods=["GET", "POST"])
-def loginPage():
-    if request.method == "POST":
-        userName = request.form.get("userName", "").strip()
-        password = request.form.get("password", "").strip()
+# @test_bp.route("/login", methods=["GET", "POST"])
+# def loginPage():
+#     if request.method == "POST":
+#         userName = request.form.get("userName", "").strip()
+#         password = request.form.get("password", "").strip()
 
-        foundUser = findUserByUserName(userName)
-        if foundUser is None or not check_password_hash(foundUser["passwordHash"], password):
-            flash("아이디 또는 비밀번호가 올바르지 않습니다.", "error")
-            return redirect(url_for("loginPage"))
+#         foundUser = findUserByUserName(userName)
+#         if foundUser is None or not check_password_hash(foundUser["passwordHash"], password):
+#             flash("아이디 또는 비밀번호가 올바르지 않습니다.", "error")
+#             return redirect(url_for("auth.login"))
 
-        session["userID"] = foundUser["id"]
-        flash("로그인되었습니다.", "success")
-        return redirect(url_for("home"))
+#         session["userID"] = foundUser["id"]
+#         flash("로그인되었습니다.", "success")
+#         return redirect(url_for("auth.home"))
 
-    return render_template("login.html")
-
-
-@app.route("/signup", methods=["GET", "POST"])
-def signupPage():
-    if request.method == "POST":
-        userName = request.form.get("userName", "").strip()
-        nickName = request.form.get("nickName", "").strip()
-        password = request.form.get("password", "").strip()
-        passwordConfirm = request.form.get("passwordConfirm", "").strip()
-
-        if not userName or not nickName or not password:
-            flash("모든 항목을 입력해주세요.", "error")
-            return redirect(url_for("signupPage"))
-
-        if password != passwordConfirm:
-            flash("비밀번호 확인이 일치하지 않습니다.", "error")
-            return redirect(url_for("signupPage"))
-
-        if findUserByUserName(userName):
-            flash("이미 사용 중인 아이디입니다.", "error")
-            return redirect(url_for("signupPage"))
-
-        newUser = {
-            "id": getNextID(users),
-            "userName": userName,
-            "passwordHash": generate_password_hash(password),
-            "nickName": nickName,
-            "createdAt": getNow(),
-        }
-        users.append(newUser)
-
-        flash("회원가입이 완료되었습니다. 로그인해주세요.", "success")
-        return redirect(url_for("loginPage"))
-
-    return render_template("signup.html")
+#     return render_template("login.html")
 
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("로그아웃되었습니다.", "success")
-    return redirect(url_for("home"))
+# @test_bp.route("/signup", methods=["GET", "POST"])
+# def signupPage():
+#     if request.method == "POST":
+#         userName = request.form.get("userName", "").strip()
+#         nickName = request.form.get("nickName", "").strip()
+#         password = request.form.get("password", "").strip()
+#         passwordConfirm = request.form.get("passwordConfirm", "").strip()
+
+#         if not userName or not nickName or not password:
+#             flash("모든 항목을 입력해주세요.", "error")
+#             return redirect(url_for("authsignupPage"))
+
+#         if password != passwordConfirm:
+#             flash("비밀번호 확인이 일치하지 않습니다.", "error")
+#             return redirect(url_for("signupPage"))
+
+#         if findUserByUserName(userName):
+#             flash("이미 사용 중인 아이디입니다.", "error")
+#             return redirect(url_for("signupPage"))
+
+#         newUser = {
+#             "id": getNextID(users),
+#             "userName": userName,
+#             "passwordHash": generate_password_hash(password),
+#             "nickName": nickName,
+#             "createdAt": getNow(),
+#         }
+#         users.append(newUser)
+
+#         flash("회원가입이 완료되었습니다. 로그인해주세요.", "success")
+#         return redirect(url_for("loginPage"))
+
+#     return render_template("signup.html")
 
 
-@app.route("/fridge")
+# @test_bp.route("/logout")
+# def logout():
+#     session.clear()
+#     flash("로그아웃되었습니다.", "success")
+#     return redirect(url_for("home"))
+
+
+@test_bp.route("/fridge")
 def fridgePage():
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -637,7 +633,7 @@ def fridgePage():
     )
 
 
-@app.route("/fridge/add", methods=["POST"])
+@test_bp.route("/fridge/add", methods=["POST"])
 def addIngredient():
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -648,12 +644,12 @@ def addIngredient():
 
     if not ingredientName or not expireDateText:
         flash("재료명과 유통기한을 모두 입력해주세요.", "error")
-        return redirect(url_for("fridgePage"))
+        return redirect(url_for("test.fridgePage"))
 
     expireDate = parseDate(expireDateText)
     if expireDate is None:
         flash("유통기한 형식이 올바르지 않습니다.", "error")
-        return redirect(url_for("fridgePage"))
+        return redirect(url_for("test.fridgePage"))
 
     newIngredient = {
         "id": getNextID(userIngredients),
@@ -666,10 +662,10 @@ def addIngredient():
     userIngredients.append(newIngredient)
 
     flash("재료가 추가되었습니다.", "success")
-    return redirect(url_for("fridgePage"))
+    return redirect(url_for("test.fridgePage"))
 
 
-@app.route("/fridge/delete/<int:id>", methods=["POST"])
+@test_bp.route("/fridge/delete/<int:id>", methods=["POST"])
 def deleteIngredient(id: int):
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -686,14 +682,14 @@ def deleteIngredient(id: int):
 
     if targetIngredient is None:
         flash("삭제할 재료를 찾지 못했습니다.", "error")
-        return redirect(url_for("fridgePage"))
+        return redirect(url_for("test.fridgePage"))
 
     userIngredients.remove(targetIngredient)
     flash("재료가 삭제되었습니다.", "success")
-    return redirect(url_for("fridgePage"))
+    return redirect(url_for("test.fridgePage"))
 
 
-@app.route("/recipes/recommend")
+@test_bp.route("/recipes/recommend")
 def recommendPage():
     currentUser = getCurrentUser()
     sortKey = request.args.get("sort", "matchPercent")
@@ -704,7 +700,7 @@ def recommendPage():
     return render_template("recommend.html", recipes=recipes)
 
 
-@app.route("/recipes/<recipeID>")
+@test_bp.route("/recipes/<recipeID>")
 def recipeDetailPage(recipeID: str):
     currentUser = getCurrentUser()
     userID = currentUser["id"] if currentUser else None
@@ -712,12 +708,12 @@ def recipeDetailPage(recipeID: str):
     recipe = buildRecipeDetail(recipeID, userID)
     if recipe is None:
         flash("레시피를 찾지 못했습니다.", "error")
-        return redirect(url_for("recommendPage"))
+        return redirect(("test.recommendPage"))
 
     return render_template("recipe_detail.html", recipe=recipe)
 
 
-@app.route("/bookmarks/add/<recipeID>", methods=["POST"])
+@test_bp.route("/bookmarks/add/<recipeID>", methods=["POST"])
 def addBookmark(recipeID: str):
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -726,7 +722,7 @@ def addBookmark(recipeID: str):
     recipeData = getRecipeByID(recipeID)
     if recipeData is None:
         flash("북마크할 레시피를 찾지 못했습니다.", "error")
-        return redirect(url_for("recommendPage"))
+        return redirect(url_for("test.recommendPage"))
 
     duplicatedBookmark = next(
         (
@@ -738,7 +734,7 @@ def addBookmark(recipeID: str):
     )
     if duplicatedBookmark:
         flash("이미 북마크한 레시피입니다.", "info")
-        return redirect(url_for("bookmarksPage"))
+        return redirect(url_for("test.bookmarksPage"))
 
     bookmarks.append(
         {
@@ -749,10 +745,10 @@ def addBookmark(recipeID: str):
         }
     )
     flash("북마크에 저장되었습니다.", "success")
-    return redirect(url_for("bookmarksPage"))
+    return redirect(url_for("test.bookmarksPage"))
 
 
-@app.route("/bookmarks")
+@test_bp.route("/bookmarks")
 def bookmarksPage():
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -774,7 +770,7 @@ def bookmarksPage():
     return render_template("bookmarks.html", bookmarkedRecipes=bookmarkedRecipes)
 
 
-@app.route("/bookmarks/remove/<recipeID>", methods=["POST"])
+@test_bp.route("/bookmarks/remove/<recipeID>", methods=["POST"])
 def removeBookmark(recipeID: str):
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -791,14 +787,14 @@ def removeBookmark(recipeID: str):
 
     if targetBookmark is None:
         flash("삭제할 북마크를 찾지 못했습니다.", "error")
-        return redirect(url_for("bookmarksPage"))
+        return redirect(url_for("test.bookmarksPage"))
 
     bookmarks.remove(targetBookmark)
     flash("북마크가 삭제되었습니다.", "success")
-    return redirect(url_for("bookmarksPage"))
+    return redirect(url_for("test.bookmarksPage"))
 
 
-@app.route("/social")
+@test_bp.route("/social")
 def socialPage():
     currentUser = getCurrentUser()
 
@@ -837,7 +833,7 @@ def socialPage():
     )
 
 
-@app.route("/social/create", methods=["POST"])
+@test_bp.route("/social/create", methods=["POST"])
 def createSocialPost():
     currentUser, redirectResponse = requireLogin()
     if redirectResponse:
@@ -850,21 +846,21 @@ def createSocialPost():
 
     if not recipeID or not title or not content:
         flash("레시피, 제목, 내용을 모두 입력해주세요.", "error")
-        return redirect(url_for("socialPage"))
+        return redirect(url_for("test.socialPage"))
 
     recipeData = getRecipeByID(recipeID)
     if recipeData is None:
         flash("선택한 레시피를 찾지 못했습니다.", "error")
-        return redirect(url_for("socialPage"))
+        return redirect(url_for("test.socialPage"))
 
     imagePath = ""
-    if imageFile and imageFile.filename:
-        originalName = secure_filename(imageFile.filename)
-        suffix = Path(originalName).suffix
-        savedName = f"{uuid4().hex}{suffix}"
-        savedPath = Path(app.config["UPLOAD_FOLDER"]) / savedName
-        imageFile.save(savedPath)
-        imagePath = f"/static/uploads/{savedName}"
+    # if imageFile and imageFile.filename:
+    #     originalName = secure_filename(imageFile.filename)
+    #     suffix = Path(originalName).suffix
+    #     savedName = f"{uuid4().hex}{suffix}"
+    #     savedPath = Path(app.config["UPLOAD_FOLDER"]) / savedName
+    #     imageFile.save(savedPath)
+    #     imagePath = f"/static/uploads/{savedName}"
 
     socialPosts.append(
         {
@@ -879,8 +875,4 @@ def createSocialPost():
     )
 
     flash("후기가 등록되었습니다.", "success")
-    return redirect(url_for("socialPage"))
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    return redirect(url_for("test.socialPage"))

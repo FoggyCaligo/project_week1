@@ -9,23 +9,23 @@
 <body>
   <header class="siteHeader">
     <div class="container headerInner">
-      <a href="{{ url_for('home') }}" class="logo">오늘 냉장고</a>
+      <a href="{{ url_for('test.home') }}" class="logo">오늘 냉장고</a>
 
       <nav class="mainNav">
-        <a href="{{ url_for('home') }}">홈</a>
-        <a href="{{ url_for('fridgePage') }}">현재 냉장고</a>
-        <a href="{{ url_for('recommendPage') }}">추천 레시피</a>
-        <a href="{{ url_for('bookmarksPage') }}">북마크</a>
-        <a href="{{ url_for('socialPage') }}">소셜</a>
+        <a href="{{ url_for('test.home') }}">홈</a>
+        <a href="{{ url_for('test.fridgePage') }}">현재 냉장고</a>
+        <a href="{{ url_for('test.recommendPage') }}">추천 레시피</a>
+        <a href="{{ url_for('test.bookmarksPage') }}">북마크</a>
+        <a href="{{ url_for('test.socialPage') }}">소셜</a>
       </nav>
 
       <div class="headerActions">
         {% if currentUser %}
           <span class="userHello">{{ currentUser.nickName }}님</span>
-          <a href="{{ url_for('logout') }}" class="btn btnGhost">로그아웃</a>
+          <a href="{{ url_for('auth.logout') }}" class="btn btnGhost">로그아웃</a>
         {% else %}
-          <a href="{{ url_for('loginPage') }}" class="btn btnGhost">로그인</a>
-          <a href="{{ url_for('signupPage') }}" class="btn btnPrimary">회원가입</a>
+          <a href="{{ url_for('auth.login') }}" class="btn btnGhost">로그인</a>
+          <a href="{{ url_for('auth.signup') }}" class="btn btnPrimary">회원가입</a>
         {% endif %}
       </div>
     </div>

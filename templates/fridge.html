@@ -36,7 +36,7 @@
             </div>
           </div>
 
-          <form action="{{ url_for('addIngredient') }}" method="post">
+          <form action="{{ url_for('test.addIngredient') }}" method="post">
             <div class="formGroup">
               <label for="ingredientName" class="formLabel">재료명</label>
               <input
@@ -101,7 +101,7 @@
                   <span class="tag tagSuccess">안전</span>
                 {% endif %}
 
-                <form action="{{ url_for('deleteIngredient', id=ingredient.id) }}" method="post">
+                <form action="{{ url_for('test.deleteIngredient', id=ingredient.id) }}" method="post">
                   <button type="submit" class="btn btnGhost">삭제</button>
                 </form>
               </div>

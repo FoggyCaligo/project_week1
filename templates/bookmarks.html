@@ -26,8 +26,8 @@
           </div>
 
           <div class="recipeActions">
-            <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
-            <form action="{{ url_for('removeBookmark', recipeID=recipe.recipeID) }}" method="post">
+            <a href="{{ url_for('test.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
+            <form action="{{ url_for('test.removeBookmark', recipeID=recipe.recipeID) }}" method="post">
               <button type="submit" class="btn btnGhost">삭제</button>
             </form>
           </div>

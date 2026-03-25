@@ -13,7 +13,7 @@
 
     <section class="card section">
       <div class="cardBody">
-        <form action="{{ url_for('recommendPage') }}" method="get" class="formRow">
+        <form action="{{ url_for('test.recommendPage') }}" method="get" class="formRow">
           <div class="formGroup">
             <label for="sort" class="formLabel">정렬</label>
             <select name="sort" id="sort" class="select">
@@ -71,10 +71,10 @@
           </div>
 
           <div class="recipeActions">
-            <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
+            <a href="{{ url_for('test.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
             <a href="{{ recipe.shoppingUrl }}" class="btn btnGhost" target="_blank">부족 재료 구매</a>
 
-            <form action="{{ url_for('addBookmark', recipeID=recipe.recipeID) }}" method="post">
+            <form action="{{ url_for('test.addBookmark', recipeID=recipe.recipeID) }}" method="post">
               <button type="submit" class="btn btnSecondary">북마크</button>
             </form>
           </div>
