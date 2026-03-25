@@ -18,15 +18,21 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 from db import Database
-from app.repository.recipeDetailRepository import RecipeDetailRepository
+from config import Config
+from app import db as sqlalchemy_db
 from app.services.recipeDetailService import RecipeDetailService
 
 
 app = Flask(__name__)
-# Initialize DB, Repository and Service
-db_instance = Database()
-recipe_repo = RecipeDetailRepository(db_instance)
-recipe_service = RecipeDetailService(recipe_repo)
+# 1. Load configuration (Database URI, etc.)
+app.config.from_object(Config)
+
+# 2. Register the app with SQLAlchemy
+sqlalchemy_db.init_app(app)
+
+# 3. Initialize services
+db_instance = Database() # Keep for legacy/manual access
+recipe_service = RecipeDetailService()
 app.config["SECRET_KEY"] = "change-this-secret-key"
 app.config["UPLOAD_FOLDER"] = str(Path("static") / "uploads")
 
