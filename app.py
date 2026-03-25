@@ -28,7 +28,7 @@ load_dotenv()
 app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{os.getenv('DB_USER', 'kool')}:{os.getenv('DB_PASSWORD', 'master')}@{os.getenv('DB_HOST', '43.201.47.181')}:{os.getenv('DB_PORT', 3306)}/{os.getenv('DB_NAME', 'cloud33')}?charset=utf8mb4"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-from app import db
+from extensions import db
 db.init_app(app)
 
 from app.routes.fridge_views import fridge_views_bp

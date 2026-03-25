@@ -1,8 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from config import Config
-
-db = SQLAlchemy() # DB 관리
+from extensions import db
 
 def create_app():
     app = Flask(__name__)
