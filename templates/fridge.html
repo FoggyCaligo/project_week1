@@ -36,7 +36,7 @@
             </div>
           </div>
 
-          <form action="{{ url_for('addIngredient') }}" method="post">
+          <form action="{{ url_for('fridge_views.add_ingredient') }}" method="post">
             <div class="formGroup">
               <label for="ingredientName" class="formLabel">재료명</label>
               <input
@@ -83,25 +83,25 @@
             {% for ingredient in ingredients %}
             <div class="listItem">
               <div class="listItemMain">
-                <strong>{{ ingredient.ingredientName }}</strong>
+                <strong>{{ ingredient.ingredient_name }}</strong>
                 <span class="listItemSub">
-                  유통기한: {{ ingredient.expireDate }}
-                  {% if ingredient.normalizedName %}
-                    · 표준명: {{ ingredient.normalizedName }}
+                  유통기한: {{ ingredient.expire_date }}
+                  {% if ingredient.normalized_name %}
+                    · 표준명: {{ ingredient.normalized_name }}
                   {% endif %}
                 </span>
               </div>
 
               <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                {% if ingredient.daysLeft is not none and ingredient.daysLeft < 0 %}
+                {% if ingredient.days_left is not none and ingredient.days_left < 0 %}
                   <span class="tag tagDanger">기한 경과</span>
-                {% elif ingredient.daysLeft is not none and ingredient.daysLeft <= 3 %}
+                {% elif ingredient.days_left is not none and ingredient.days_left <= 3 %}
                   <span class="tag tagWarning">임박</span>
                 {% else %}
                   <span class="tag tagSuccess">안전</span>
                 {% endif %}
 
-                <form action="{{ url_for('deleteIngredient', id=ingredient.id) }}" method="post">
+                <form action="{{ url_for('fridge_views.delete_ingredient', id=ingredient.id) }}" method="post">
                   <button type="submit" class="btn btnGhost">삭제</button>
                 </form>
               </div>
