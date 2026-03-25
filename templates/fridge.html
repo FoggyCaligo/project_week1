@@ -2,79 +2,74 @@
 {% block title %}내 냉장고 관리 | 오늘 냉장고{% endblock %}
 
 {% block content %}
-    <style>
-        .fridge-container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .fridge-container h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; font-size: 1.8rem; font-weight: bold; }
-        .form-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-        .form-group input, .form-group select, .form-group button { padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
-        .form-group input[type="text"] { flex: 2; min-width: 150px; }
-        .form-group select { flex: 1; min-width: 120px; }
-        .form-group input[type="date"] { flex: 1.5; min-width: 140px; }
-        .form-group button[type="submit"] { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; flex: 1; min-width: 80px; transition: background-color 0.2s; }
-        .form-group button[type="submit"]:hover { background-color: #2980b9; }
-        .item-list { list-style: none; padding: 0; margin: 0; }
-        .item-card { display: flex; justify-content: space-between; align-items: center; padding: 18px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; background-color: #fff; transition: transform 0.2s; }
-        .item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .item-info { display: flex; flex-direction: column; gap: 6px; }
-        .item-name { font-size: 18px; font-weight: 700; color: #2c3e50; display: flex; align-items: center; }
-        .item-meta { font-size: 13px; color: #7f8c8d; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 12px; }
-        .badge-danger { background-color: #e74c3c; color: white; }
-        .badge-warning { background-color: #f1c40f; color: #2c3e50; }
-        .badge-success { background-color: #2ecc71; color: white; }
-        .btn-delete { background-color: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
-        .btn-delete:hover { background-color: #c0392b; }
-        .empty-msg { text-align: center; color: #95a5a6; padding: 40px 0; font-size: 16px; }
+<section class="section">
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
-        .modal-close { position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 1.5rem; color: #aaa; }
-        .modal-title { margin-top: 0; border-bottom: 2px solid #27ae60; padding-bottom: 10px; color: #2c3e50; font-size: 1.5rem; font-weight: bold; }
-        .modal-body p { margin-bottom: 10px; }
-    </style>
+        <div class="sectionHeader">
+            <h1 class="sectionTitle">❄️ 내 냉장고 식재료 관리</h1>
+            <p class="sectionDesc">냉장고 속 재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
+        </div>
 
-    <div class="fridge-container" style="margin-top: 40px; margin-bottom: 40px;">
-        <h1>❄️ 내 냉장고 식재료 관리</h1>
-        
-        <form id="addForm" class="form-group">
-            <input type="text" id="ingredient_name" placeholder="재료명 (예: 당근)" required>
-            <select id="category" required>
-                <option value="">분류</option>
-                <option value="채소">채소</option>
-                <option value="과일">과일</option>
-                <option value="육류">육류</option>
-                <option value="수산물">수산물</option>
-                <option value="유제품">유제품</option>
-                <option value="가공식품">가공식품</option>
-                <option value="기타">기타</option>
-            </select>
-            <input type="date" id="expire_date" required>
-            <button type="submit">추가</button>
-        </form>
+        <div class="card" style="margin-bottom: 30px;">
+            <div class="cardBody">
+                <form id="addForm" class="formGroup" style="display: flex; gap: 12px; margin-bottom: 0; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 2; min-width: 150px;">
+                        <label class="formLabel" for="ingredient_name">재료명</label>
+                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근" required>
+                    </div>
+                    <div style="flex: 1; min-width: 120px;">
+                        <label class="formLabel" for="category">분류</label>
+                        <select id="category" class="input" required>
+                            <option value="">분류 선택</option>
+                            <option value="채소">채소</option>
+                            <option value="과일">과일</option>
+                            <option value="육류">육류</option>
+                            <option value="수산물">수산물</option>
+                            <option value="유제품">유제품</option>
+                            <option value="가공식품">가공식품</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1.5; min-width: 140px;">
+                        <label class="formLabel" for="expire_date">유통기한</label>
+                        <input type="date" id="expire_date" class="input" required>
+                    </div>
+                    <div style="flex: 0 0 auto;">
+                        <button type="submit" class="btn btnPrimary" style="height: 48px; padding: 0 24px;">추가하기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0;">목록</h2>
-            <select id="sortSelect" style="padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.9rem;" onchange="loadItems()">
+        <div class="sectionHeader" style="margin-top: 40px; margin-bottom: 16px;">
+            <h2 class="sectionTitle" style="font-size: 22px;">현재 보관 중인 재료</h2>
+            <select id="sortSelect" class="input" style="width: auto; padding: 8px 36px 8px 12px; font-size: 14px;" onchange="loadItems()">
                 <option value="expire_asc">유통기한 임박순</option>
                 <option value="name_asc">이름 가나다순</option>
                 <option value="created_desc">최근 등록순</option>
             </select>
         </div>
 
-        <ul id="itemList" class="item-list">
-            <!-- 스크립트를 통해 아이템 렌더링 -->
-        </ul>
+        <div class="card">
+            <ul id="itemList" style="list-style: none; padding: 0; margin: 0;">
+                <!-- 스크립트를 통해 아이템 렌더링 -->
+            </ul>
+        </div>
 
         {% if recommended_recipes %}
-        <div style="margin-top: 40px;">
-            <h2 style="color: #2c3e50; font-size: 1.2rem;">💡 이런 레시피는 어때요? (임박 재료 활용)</h2>
-            <div style="display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px;">
+        <div style="margin-top: 48px;">
+            <div class="sectionHeader">
+                <h2 class="sectionTitle" style="font-size: 22px;">💡 이런 레시피는 어때요?</h2>
+                <p class="sectionDesc">유통기한이 임박한 재료를 활용한 추천 요리입니다.</p>
+            </div>
+            
+            <div class="grid3">
                 {% for recipe in recommended_recipes %}
-                <div style="min-width: 200px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}" style="width: 100%; height: 140px; object-fit: cover;">
-                    <div style="padding: 10px;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 5px;">{{ recipe.recipeName }}</div>
-                        <div style="font-size: 12px; color: #7f8c8d;">{{ recipe.description }}</div>
+                <div class="card">
+                    <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
+                    <div class="cardBody" style="padding: 16px;">
+                        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">{{ recipe.recipeName }}</h3>
+                        <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4;">{{ recipe.description }}</p>
                     </div>
                 </div>
                 {% endfor %}
@@ -82,54 +77,123 @@
         </div>
         {% endif %}
     </div>
+</section>
 
-    <!-- 상세/수정 모달 -->
-    <div id="itemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative;">
-            <span onclick="closeModal()" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 1.5rem; color: #aaa;">&times;</span>
-            <h2 id="modalTitle" style="margin-top: 0; border-bottom: 2px solid #27ae60; padding-bottom: 10px; color: #2c3e50;">재료 상세</h2>
+<!-- 상세/수정 모달 -->
+<div id="itemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px);">
+    <div class="card" style="width: 90%; max-width: 420px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <span onclick="closeModal()" style="position: absolute; right: 20px; top: 16px; cursor: pointer; font-size: 24px; color: var(--colorTextSub); line-height: 1;">&times;</span>
+        <div class="cardBody">
+            <h2 id="modalTitle" style="margin: 0 0 20px 0; font-size: 20px; font-weight: 800; color: var(--colorText); padding-bottom: 12px; border-bottom: 2px solid var(--colorPrimary);">재료 상세</h2>
             
             <div id="modalContent">
-                <!-- 상세 정보 -->
-                <p><strong>재료명:</strong> <span id="detailName"></span></p>
-                <p><strong>분류:</strong> <span id="detailCategory"></span></p>
-                <p><strong>유통기한:</strong> <span id="detailExpire"></span> <span id="detailBadge" class="badge"></span></p>
-                <p><strong>등록일시:</strong> <span id="detailCreated"></span></p>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong style="color: var(--colorTextSub);">재료명</strong>
+                        <span id="detailName" style="font-weight: 600;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong style="color: var(--colorTextSub);">분류</strong>
+                        <span id="detailCategory"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong style="color: var(--colorTextSub);">유통기한</strong>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="detailExpire"></span>
+                            <span id="detailBadge" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white;"></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong style="color: var(--colorTextSub);">등록일시</strong>
+                        <span id="detailCreated" style="font-size: 13px;"></span>
+                    </div>
+                </div>
                 
-                <div style="margin-top: 20px; text-align: right;">
-                    <button type="button" onclick="showEditForm()" style="background: #f39c12; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">수정하기</button>
+                <div style="margin-top: 28px; display: flex; gap: 10px;">
+                    <button type="button" class="btn btnSecondary" style="flex: 1;" onclick="closeModal()">닫기</button>
+                    <button type="button" class="btn btnPrimary" style="flex: 1;" onclick="showEditForm()">수정하기</button>
                 </div>
             </div>
 
-            <form id="editForm" style="display: none; margin-top: 15px;">
+            <form id="editForm" style="display: none;">
                 <input type="hidden" id="edit_id">
-                <div class="form-group">
-                    <label>재료명</label>
-                    <input type="text" id="edit_name" required>
+                <div class="formGroup">
+                    <label class="formLabel">재료명</label>
+                    <input type="text" id="edit_name" class="input" required>
                 </div>
-                <div class="form-group">
-                    <label>분류</label>
-                    <select id="edit_category">
-                        <option value="채소류">채소류</option>
+                <div class="formGroup">
+                    <label class="formLabel">분류</label>
+                    <select id="edit_category" class="input">
+                        <option value="채소">채소</option>
+                        <option value="과일">과일</option>
                         <option value="육류">육류</option>
-                        <option value="해산물">해산물</option>
+                        <option value="수산물">수산물</option>
                         <option value="유제품">유제품</option>
-                        <option value="과일류">과일류</option>
                         <option value="가공식품">가공식품</option>
                         <option value="기타">기타</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>유통기한</label>
-                    <input type="date" id="edit_expire" required>
+                <div class="formGroup" style="margin-bottom: 24px;">
+                    <label class="formLabel">유통기한</label>
+                    <input type="date" id="edit_expire" class="input" required>
                 </div>
-                <div style="text-align: right; margin-top: 15px;">
-                    <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px;">취소</button>
-                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">저장</button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btnGhost" style="flex: 1;" onclick="cancelEdit()">취소</button>
+                    <button type="submit" class="btn btnPrimary" style="flex: 1;">저장</button>
                 </div>
             </form>
         </div>
     </div>
+</div>
+
+<style>
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--colorBorder);
+        transition: background-color 0.2s;
+    }
+    .item-row:last-child {
+        border-bottom: none;
+    }
+    .item-row:hover {
+        background-color: rgba(0,0,0,0.01);
+    }
+    .item-info-clickable {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        cursor: pointer;
+        flex: 1;
+    }
+    .item-name-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--colorText);
+    }
+    .item-meta-wrap {
+        font-size: 14px;
+        color: var(--colorTextSub);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    .badge-dday {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        color: white;
+    }
+    .badge-success { background-color: #2ecc71; color: white; }
+    .badge-warning { background-color: #f1c40f; color: #2c3e50; }
+    .badge-danger { background-color: #e74c3c; color: white; }
+</style>
 
     <script>
         const USER_ID = {{ session.get('userID', 1) }};
@@ -159,7 +223,7 @@
                     
                     if (item.days_left < 0) {
                         badgeClass = 'badge-danger';
-                        badgeText = `유통기한 경과 (D+${Math.abs(item.days_left)})`;
+                        badgeText = `경과 (D+${Math.abs(item.days_left)})`;
                     } else if (item.days_left <= 3) {
                         badgeClass = 'badge-warning'; // 3일 이하 임박 
                     } else if (item.days_left === 0) {
@@ -168,19 +232,20 @@
                     }
 
                     const li = document.createElement('li');
-                    li.className = 'item-card';
+                    li.className = 'item-row';
                     li.innerHTML = `
-                        <div class="item-info" onclick="openModal(${item.id})" style="cursor: pointer;">
-                            <div class="item-name">
+                        <div class="item-info-clickable" onclick="openModal(${item.id})">
+                            <div class="item-name-wrap">
                                 ${item.ingredient_name}
-                                <span class="badge ${badgeClass}">${badgeText}</span>
+                                <span class="badge-dday ${badgeClass}">${badgeText}</span>
                             </div>
-                            <div class="item-meta">
-                                <span>분류: ${item.category}</span> | 
-                                <span>유통기한: ${item.expire_date}</span>
+                            <div class="item-meta-wrap">
+                                <span>${item.category}</span>
+                                <span>|</span>
+                                <span>${item.expire_date}</span>
                             </div>
                         </div>
-                        <button class="btn-delete" onclick="deleteItem(${item.id})">삭제</button>
+                        <button class="btn btnGhost" style="color: #e74c3c;" onclick="deleteItem(${item.id})">삭제</button>
                     `;
                     list.appendChild(li);
                 });
@@ -218,7 +283,7 @@
                 }
                 
                 const badge = document.getElementById('detailBadge');
-                badge.className = `badge ${badgeClass}`;
+                badge.className = `badge-dday ${badgeClass}`;
                 badge.innerText = badgeText;
 
                 // 폼에도 값 미리 채워넣기
