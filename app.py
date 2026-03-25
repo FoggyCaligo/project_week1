@@ -278,13 +278,22 @@ def getRecipeByID(recipeID: str) -> dict | None:
 
 
 def getUserIngredientList(userID: int) -> list[dict]:
-    filteredList = [item for item in userIngredients if item["userID"] == userID]
+    from app.models.ingredient import UserIngredient
+    items = UserIngredient.query.filter_by(user_id=userID).all()
     enrichedList = []
 
-    for item in filteredList:
-        copiedItem = dict(item)
-        copiedItem["daysLeft"] = (copiedItem["expireDate"] - date.today()).days
-        enrichedList.append(copiedItem)
+    for item in items:
+        daysLeft = (item.expire_date - date.today()).days
+        enrichedList.append({
+            "id": item.id,
+            "userID": item.user_id,
+            "ingredientName": item.ingredient_name,
+            "normalizedName": item.normalized_name,
+            "category": item.category,
+            "expireDate": item.expire_date,
+            "daysLeft": daysLeft,
+            "createdAt": item.created_at
+        })
 
     enrichedList.sort(key=lambda item: (item["daysLeft"], item["ingredientName"]))
     return enrichedList
@@ -294,10 +303,12 @@ def getOwnedIngredientSet(userID: int | None) -> set[str]:
     if userID is None:
         return set()
 
+    from app.models.ingredient import UserIngredient
+    items = UserIngredient.query.filter_by(user_id=userID).all()
+    
     ownedSet = set()
-    for item in userIngredients:
-        if item["userID"] == userID:
-            ownedSet.add(item["normalizedName"])
+    for item in items:
+        ownedSet.add(item.normalized_name)
     return ownedSet
 
 

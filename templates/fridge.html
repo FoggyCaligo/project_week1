@@ -1,20 +1,17 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>내 냉장고 관리</title>
+{% extends "base.html" %}
+{% block title %}내 냉장고 관리 | 오늘 냉장고{% endblock %}
+
+{% block content %}
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
-        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        .fridge-container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .fridge-container h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; font-size: 1.8rem; font-weight: bold; }
         .form-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-        input, select, button { padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; }
-        input[type="text"] { flex: 2; min-width: 150px; }
-        select { flex: 1; min-width: 120px; }
-        input[type="date"] { flex: 1.5; min-width: 140px; }
-        button[type="submit"] { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; flex: 1; min-width: 80px; }
-        button[type="submit"]:hover { background-color: #2980b9; }
+        .form-group input, .form-group select, .form-group button { padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        .form-group input[type="text"] { flex: 2; min-width: 150px; }
+        .form-group select { flex: 1; min-width: 120px; }
+        .form-group input[type="date"] { flex: 1.5; min-width: 140px; }
+        .form-group button[type="submit"] { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; flex: 1; min-width: 80px; transition: background-color 0.2s; }
+        .form-group button[type="submit"]:hover { background-color: #2980b9; }
         .item-list { list-style: none; padding: 0; margin: 0; }
         .item-card { display: flex; justify-content: space-between; align-items: center; padding: 18px; border: 1px solid #eee; border-radius: 10px; margin-bottom: 10px; background-color: #fff; transition: transform 0.2s; }
         .item-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
@@ -28,10 +25,15 @@
         .btn-delete { background-color: #e74c3c; color: white; padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .btn-delete:hover { background-color: #c0392b; }
         .empty-msg { text-align: center; color: #95a5a6; padding: 40px 0; font-size: 16px; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
+        .modal-close { position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 1.5rem; color: #aaa; }
+        .modal-title { margin-top: 0; border-bottom: 2px solid #27ae60; padding-bottom: 10px; color: #2c3e50; font-size: 1.5rem; font-weight: bold; }
+        .modal-body p { margin-bottom: 10px; }
     </style>
-</head>
-<body>
-    <div class="container">
+
+    <div class="fridge-container" style="margin-top: 40px; margin-bottom: 40px;">
         <h1>❄️ 내 냉장고 식재료 관리</h1>
         
         <form id="addForm" class="form-group">
@@ -324,5 +326,4 @@
         // 페이지 로드 시 최초 데이터 조회
         loadItems();
     </script>
-</body>
-</html>
+{% endblock %}

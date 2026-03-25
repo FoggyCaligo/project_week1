@@ -20,12 +20,14 @@ class FridgeService:
         except ValueError:
             return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
 
+        normalized_name = ingredient_name.lower().replace(" ", "")
         if not category:
             category = "기타"
 
         new_item = UserIngredient(
             user_id=user_id,
             ingredient_name=ingredient_name,
+            normalized_name=normalized_name,
             category=category,
             expire_date=expire_date
         )
@@ -54,6 +56,7 @@ class FridgeService:
             return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
 
         item.ingredient_name = ingredient_name
+        item.normalized_name = ingredient_name.lower().replace(" ", "")
         item.category = category if category else "기타"
         item.expire_date = expire_date
         
