@@ -23,8 +23,17 @@ class FridgeService:
         normalized_name = ingredient_name.lower().replace(" ", "")
         if not category:
             category = "기타"
-
-        normalized_name = ingredient_name.lower().replace(" ", "")
+            
+        # 팀원의 인메모리 인증으로 인해 DB users 테이블에 사용자가 없을 경우 외래키 에러 방지용 임시 생성 (db.py의 ensureUser 로직)
+        from sqlalchemy import text
+        try:
+            db.session.execute(
+                text("INSERT IGNORE INTO users (ID, userName, passwordHash, nickName) VALUES (:id, :un, :pw, :nn)"),
+                {"id": user_id, "un": f"user_{user_id}", "pw": "dummy_hash", "nn": f"User {user_id}"}
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         
         new_item = UserIngredient(
             user_id=user_id,

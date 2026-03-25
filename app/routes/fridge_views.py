@@ -3,19 +3,28 @@ from app.services.fridge_service import FridgeService
 
 fridge_views_bp = Blueprint('fridge_views', __name__)
 
-def get_current_user_id():
-    # 팀원 인증 로직과 연동 (loginPage에서 session["userID"] 사용)
-    return session.get('userID', 1)
+import sys
+
+def get_current_user():
+    """팀원의 모놀리식 app.py 인메모리 인증 로직과 동기화하여 유효한 사용자인지 검증"""
+    try:
+        main_module = sys.modules.get('__main__')
+        if hasattr(main_module, 'getCurrentUser'):
+            return main_module.getCurrentUser()
+    except Exception:
+        pass
+    return None if 'userID' not in session else {'id': session['userID']}
 
 @fridge_views_bp.route('/fridge')
 def fridge_index():
     """냉장고 페이지 화면 렌더링 (SSR 방식)"""
-    # 로그아웃 상태일 때 500 에러 방지를 위해, userID 가 없으면 로그인으로 튕겨냄
-    if 'userID' not in session:
-        flash("로그인이 필요합니다.", "warning")
-        return redirect('/login')
+    current_user = get_current_user()
+    if not current_user:
+        session.pop('userID', None) # 잘못된 세션 초기화
+        flash("로그인이 필요합니다.", "error")
+        return redirect(url_for('loginPage'))
         
-    user_id = get_current_user_id()
+    user_id = current_user['id']
     
     # 1. 서비스 계층을 통해 데이터 조회
     items = FridgeService.get_user_ingredients(user_id)

@@ -1,12 +1,23 @@
+import sys
 from flask import Blueprint, request, jsonify, session
 from app.services.fridge_service import FridgeService
 
 fridge_bp = Blueprint('fridge', __name__, url_prefix='/api/fridge')
 
+def get_current_user():
+    try:
+        main_module = sys.modules.get('__main__')
+        if hasattr(main_module, 'getCurrentUser'):
+            return main_module.getCurrentUser()
+    except Exception:
+        pass
+    return None if 'userID' not in session else {'id': session['userID']}
+
 @fridge_bp.route('/<int:user_id>', methods=['GET'])
 def get_fridge_items(user_id):
     """특정 사용자의 냉장고 재료 목록 조회"""
-    if 'userID' not in session and user_id != session.get('userID'):
+    current_user = get_current_user()
+    if not current_user or user_id != current_user.get('id'):
         return jsonify({"ok": False, "message": "권한이 없습니다."}), 401
         
     try:
@@ -39,10 +50,11 @@ def get_fridge_items(user_id):
 @fridge_bp.route('/item/<int:ingredient_id>', methods=['GET'])
 def get_fridge_item(ingredient_id):
     """단일 재료 상세 조회"""
-    if 'userID' not in session:
+    current_user = get_current_user()
+    if not current_user:
         return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
         
-    user_id = session.get('userID')
+    user_id = current_user.get('id')
     from app.models.ingredient import UserIngredient
     item = UserIngredient.query.filter_by(id=ingredient_id, user_id=user_id).first()
     
@@ -54,11 +66,12 @@ def get_fridge_item(ingredient_id):
 @fridge_bp.route('/edit/<int:ingredient_id>', methods=['PUT', 'POST'])
 def edit_fridge_item(ingredient_id):
     """냉장고 재료 수정"""
-    if 'userID' not in session:
+    current_user = get_current_user()
+    if not current_user:
         return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
         
     data = request.get_json(silent=True) or request.form
-    user_id = session.get('userID')
+    user_id = current_user.get('id')
     ingredient_name = (data.get('ingredient_name') or '').strip()
     category = (data.get('category') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
@@ -73,12 +86,13 @@ def edit_fridge_item(ingredient_id):
 @fridge_bp.route('/add', methods=['POST'])
 def add_fridge_item():
     """냉장고에 새로운 재료 추가"""
-    if 'userID' not in session:
+    current_user = get_current_user()
+    if not current_user:
         return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
         
     data = request.get_json(silent=True) or request.form
 
-    user_id = session.get('userID')
+    user_id = current_user.get('id')
     ingredient_name = (data.get('ingredient_name') or '').strip()
     category = (data.get('category') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
@@ -93,10 +107,11 @@ def add_fridge_item():
 @fridge_bp.route('/delete/<int:ingredient_id>', methods=['DELETE', 'POST'])
 def delete_fridge_item(ingredient_id):
     """냉장고에서 특정 재료 삭제"""
-    if 'userID' not in session:
+    current_user = get_current_user()
+    if not current_user:
         return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
         
-    user_id = session.get('userID')
+    user_id = current_user.get('id')
 
     ok, message = FridgeService.delete_ingredient(user_id, ingredient_id)
     
