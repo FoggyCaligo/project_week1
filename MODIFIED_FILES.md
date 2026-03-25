@@ -13,3 +13,6 @@
    - 식재료 리스트 왼쪽의 동그란 아이콘을 삭제하고, 서버에서 받아온 `item.image_url`을 적용한 이미지 태그(`<img>`)로 교체.
    - 모달(상세보기 창) 상단에도 해당 재료의 이미지를 크고 둥글게(120x120) 표시하도록 레이아웃 추가.
    - CSS 스타일(object-fit: cover, border-radius)을 통해 이미지가 찌그러지지 않고 예쁘게 나오도록 조정.
+
+4. `app/services/fridge_service.py`
+   - 식재료 추가(`add_ingredient`), 수정(`edit_ingredient`), 삭제(`delete_ingredient`) 시 `SQLAlchemy` ORM 객체의 외래키 바인딩 에러를 방지하기 위해 `원시 SQL(Raw SQL)`을 사용하도록 로직을 변경하여 500 에러 및 400 에러를 수정했습니다.
