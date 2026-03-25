@@ -18,7 +18,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 from db import Database
-from repository.recipeDetailRepository import RecipeDetailRepository
+from app.repository.recipeDetailRepository import RecipeDetailRepository
 from app.services.recipeDetailService import RecipeDetailService
 
 
