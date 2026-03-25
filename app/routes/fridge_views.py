@@ -4,16 +4,16 @@ from app.services.fridge_service import FridgeService
 fridge_views_bp = Blueprint('fridge_views', __name__)
 
 def get_current_user_id():
-    # 추후 팀원 인증 로직과 연동 예정 (테스트 편의상 1을 반환하거나 인증 추가)
-    return session.get('user_id', 1)
+    # 팀원 인증 로직과 연동 (loginPage에서 session["userID"] 사용)
+    return session.get('userID', 1)
 
 @fridge_views_bp.route('/fridge')
 def fridge_index():
     """냉장고 페이지 화면 렌더링 (SSR 방식)"""
-    # 로그아웃 상태일 때 500 에러 방지를 위해, user_id 가 없으면 로그인으로 튕겨냄 (현재 주석처리)
-    # if 'user_id' not in session:
-    #     flash("로그인이 필요합니다.", "warning")
-    #     return redirect(url_for('auth.login'))
+    # 로그아웃 상태일 때 500 에러 방지를 위해, userID 가 없으면 로그인으로 튕겨냄
+    if 'userID' not in session:
+        flash("로그인이 필요합니다.", "warning")
+        return redirect('/login')
         
     user_id = get_current_user_id()
     
