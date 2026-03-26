@@ -142,7 +142,7 @@ class ApiService:
             print(f"[DB Error] 전체 레시피 로드 실패: {e}")
             return [], None
     @staticmethod
-    def searchRecipesFromDB(keyword, page=1, per_page=10):
+    def searchRecipesFromDB(keyword, page=1, per_page=10, sort='lastest'):
         """
         [비회원/전체용] 우리 DB에서 재료명으로 레시피를 검색합니다.
         """
@@ -156,8 +156,13 @@ class ApiService:
             for k in keywords:
                 search_term = f"%{k}%"
                 query = query.filter(Recipe.rcpPartsDtls.like(search_term))
-                
-            pagination = query.order_by(Recipe.rcpSeq.desc()).paginate(
+            if sort == 'name':
+                order_criteria = Recipe.rcpNm.asc()
+            elif sort == 'low_cal':
+                order_criteria = Recipe.infoFat.asc() # 칼로리 낮은 순 등으로 대체
+            else:
+                order_criteria = Recipe.rcpSeq.desc() # 최신순
+            pagination = query.order_by(order_criteria).paginate(
                 page=page, per_page=per_page, error_out=False
             )
 

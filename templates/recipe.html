@@ -16,12 +16,17 @@
       <div class="cardBody">
         <form action="{{ url_for('main.allRecipesPage') }}" method="get" class="formRow">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <form action="{{ request.path }}" method="get" class="formRow">
+          {# 🎯 [핵심] 검색어가 있다면 정렬할 때도 같이 들고 가도록 hidden input 추가! #}
+          {% if keyword %}
+            <input type="hidden" name="q" value="{{ keyword }}">
+          {% endif %}
           <div class="formGroup">
             <label for="sort" class="formLabel">정렬</label>
             <select name="sort" id="sort" class="select">
               <option value="latest">최신순</option>
               <option value="name">이름순</option>
-              <option value="cookTime">조리 시간 짧은 순</option>
+              <option value="low_cal">칼로리 낮은순</option>
             </select>
           </div>
           <div class="formGroup" style="align-self:end;">
@@ -61,7 +66,7 @@
           </p>
 
           <div class="recipeActions" style="margin-top: 20px;">
-            <a href="{{ url_for('recipe.recipeDetailPage', recipeID=recipe.RCP_SEQ) }}" class="btn btnPrimary" style="width: 100%;">레시피 상세보기</a>
+            <a href="{{ url_for('recipe.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary" style="width: 100%;">레시피 상세보기</a>
           </div>
         </div>
       </article>

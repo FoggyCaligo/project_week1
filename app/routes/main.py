@@ -98,15 +98,22 @@ def recommendPage():
                            current_sort=sort_type) # 정렬 상태 유지용
 @main_bp.route("/recipes")
 def allRecipesPage():
-    # 1. 입력값만 받아서
+    # 1. 입력값 받기
+    raw_query = request.args.get("q", "").strip() # 🎯 검색어 추가!
     page = request.args.get('page', 1, type=int)
     sort_type = request.args.get('sort', 'latest')
     
-    # 2. 서비스에 맡기고 결과만 받음
-    recipes, pagination = ApiService.getAllRecipesWithPagination(page=page, sort=sort_type)
+    # 2. [핵심] 검색어가 있으면 검색 서비스로, 없으면 전체 서비스로!
+    if raw_query:
+        # 검색어와 정렬 조건을 함께 넘겨줍니다. (ApiService에 정렬 로직이 있어야 함)
+        recipes, pagination = ApiService.searchRecipesFromDB(raw_query, page=page, sort=sort_type)
+    else:
+        # 기존의 전체 레시피 로드
+        recipes, pagination = ApiService.getAllRecipesWithPagination(page=page, sort=sort_type)
     
-    # 3. 서빙(렌더링)
+    # 3. 렌더링 (keyword를 넘겨줘야 템플릿의 hidden input이 작동합니다)
     return render_template("recipe.html", 
                            recipes=recipes, 
                            pagination=pagination,
-                           current_sort=sort_type)
+                           current_sort=sort_type,
+                           keyword=raw_query) # 🎯 템플릿에 검색어 전달!
