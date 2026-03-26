@@ -38,7 +38,7 @@ class ApiService:
             refined_list = []
             for r in random_recipes:
                 refined_list.append({
-                    "RCP_SEQ": r.rcpSeq,          # 모델의 PK 필드명에 맞게 수정
+                    "recipeID": r.rcpSeq,          # 모델의 PK 필드명에 맞게 수정
                     "RCP_NM": r.rcpNm, # 모델 필드명 확인
                     "ATT_FILE_NO_MAIN": r.attFileNoMain or "/static/images/default_recipe.jpg",
                     "RCP_PAT2": r.rcpPat2,
