@@ -26,7 +26,7 @@ def addBookmark(recipeID: str):
         (
             item
             for item in bookmarks
-            if item["userID"] == currentUser["id"] and item["recipeID"] == recipeID
+            if item["userID"] == currentUser.ID and item["recipeID"] == recipeID
         ),
         None,
     )
@@ -38,7 +38,7 @@ def addBookmark(recipeID: str):
     bookmarks.append(
         {
             "id": getNextID(bookmarks),
-            "userID": currentUser["id"],
+            "userID": currentUser.ID,
             "recipeID": recipeID,
             "createdAt": getNow(),
         }
@@ -54,7 +54,7 @@ def bookmarksPage():
         return redirectResponse
 
     userBookmarkList = sorted(
-        [item for item in bookmarks if item["userID"] == currentUser["id"]],
+        [item for item in bookmarks if item["userID"] == currentUser.ID],
         key=lambda item: item["createdAt"],
         reverse=True,
     )
@@ -63,7 +63,7 @@ def bookmarksPage():
     for bookmarkData in userBookmarkList:
         recipeData = getRecipeByID(bookmarkData["recipeID"])
         if recipeData:
-            recipeCard = buildRecipeCard(recipeData, currentUser["id"])
+            recipeCard = buildRecipeCard(recipeData, currentUser.ID)
             recipeCard["createdAt"] = formatDateTime(bookmarkData["createdAt"])
             bookmarkedRecipes.append(recipeCard)
 
@@ -79,7 +79,7 @@ def removeBookmark(recipeID: str):
         (
             item
             for item in bookmarks
-            if item["userID"] == currentUser["id"] and item["recipeID"] == recipeID
+            if item["userID"] == currentUser.ID and item["recipeID"] == recipeID
         ),
         None,
     )
