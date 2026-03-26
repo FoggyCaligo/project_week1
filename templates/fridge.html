@@ -2,44 +2,51 @@
 {% block title %}현재 냉장고 | 오늘 냉장고{% endblock %}
 
 {% block content %}
+<script src="https://js.tosspayments.com/v2/standard"></script>
 <section class="section">
     <div class="container" style="max-width: 800px; margin: 0 auto;">
         
-
         <div class="sectionHeader fridgeHeader">
             <div>
                 <h1 class="sectionTitle">현재 냉장고</h1>
-                <p class="sectionDesc">냉장고 속 식재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
+                <p class="sectionDesc">재료명·분류로 검색한 뒤 상품을 고르고, <strong>토스 결제창</strong>에서 결제하면 냉장고에 담깁니다. (로그인 없이 결제 가능 · 비로그인 시 저장 계정은 서버 설정 참고)</p>
             </div>
         </div>
-        
 
         <div class="card" style="margin-bottom: 32px;">
             <div class="cardBody">
                 <form id="addForm" class="fridgeAddForm">
                     <div class="formField">
-                        <label class="formLabel" for="ingredient_name">재료명</label>
-                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required>
+                        <label class="formLabel" for="ingredient_name">재료명 <span class="reqStar" aria-hidden="true">*</span></label>
+                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required autocomplete="off" maxlength="40">
                     </div>
                     <div class="formField">
-                        <label class="formLabel" for="category">분류</label>
-                        <select id="category" class="input" required>
-                            <option value="">분류 선택</option>
-                            <option value="채소">채소</option>
-                            <option value="과일">과일</option>
-                            <option value="육류">육류</option>
-                            <option value="수산물">수산물</option>
-                            <option value="유제품">유제품</option>
-                            <option value="가공식품">가공식품</option>
-                            <option value="기타">기타</option>
-                        </select>
+                        <label class="formLabel" for="btn_auto_category">분류 <span class="reqStar" aria-hidden="true">*</span></label>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" id="btn_auto_category" class="btn btnSecondary fridgeAddButton" style="min-width: 96px;">자동 분류</button>
+                            <button type="button" id="btn_manual_category" class="btn btnSecondary fridgeAddButton" style="min-width: 96px;">직접 선택</button>
+                            <span id="category_display" style="font-size: 14px; font-weight: 600; color: var(--colorTextSub);">—</span>
+                        </div>
+                        <div id="category_manual_wrap" style="display: none; margin-top: 8px; max-width: 100%;">
+                            <select id="category_manual" class="input" aria-label="분류 직접 선택">
+                                <option value="">분류 선택</option>
+                                <option value="채소">채소</option>
+                                <option value="과일">과일</option>
+                                <option value="육류">육류</option>
+                                <option value="수산물">수산물</option>
+                                <option value="유제품">유제품</option>
+                                <option value="가공식품">가공식품</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="category" name="category" value="">
                     </div>
                     <div class="formField">
-                        <label class="formLabel" for="expire_date">유통기한</label>
-                        <input type="date" id="expire_date" class="input" required>
+                        <label class="formLabel" for="expire_month">유통기한 <span style="font-weight:400; color:var(--colorTextSub); font-size:12px;">(선택, 연·월 · 분류 후 분류에 맞는 달만 선택)</span></label>
+                        <input type="month" id="expire_month" class="input" title="분류를 정한 뒤, 그 분류에 맞는 달만 선택할 수 있습니다." disabled>
                     </div>
                     <div class="formField fridgeAddButtonWrap">
-                        <button type="submit" class="btn btnPrimary fridgeAddButton">추가</button>
+                        <button type="submit" class="btn btnPrimary fridgeAddButton">검색</button>
                     </div>
                 </form>
             </div>
@@ -54,18 +61,17 @@
             </select>
         </div>
 
-        <div class="card">
-            <!-- 로딩 상태 표시 -->
-            <div id="loadingState" class="emptyState" style="padding: 24px;">
-                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
-                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
-                <div class="skeleton-text" style="width: 100%; height: 60px;"></div>
-            </div>
-            
-            <ul id="itemList" style="list-style: none; padding: 0; margin: 0; display: none;">
-                <!-- 스크립트를 통해 아이템 렌더링 -->
-            </ul>
+        <!-- 로딩 상태 표시 -->
+        <div id="loadingState" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; margin-top: 20px;">
+            <div class="skeletonCard" style="height: 180px;"></div>
+            <div class="skeletonCard" style="height: 180px;"></div>
+            <div class="skeletonCard" style="height: 180px;"></div>
+            <div class="skeletonCard" style="height: 180px;"></div>
         </div>
+        
+        <ul id="itemList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; display: none; margin-bottom: 32px;">
+            <!-- 스크립트를 통해 아이템 렌더링 -->
+        </ul>
 
         <div id="recipeSection" style="margin-top: 48px; display: none;">
             <div class="sectionHeader">
@@ -88,6 +94,9 @@
             <h2 id="modalTitle" style="margin: 0 0 20px 0; font-size: 20px; font-weight: 800; color: var(--colorText); padding-bottom: 12px; border-bottom: 2px solid var(--colorPrimary);">재료 상세</h2>
             
             <div id="modalContent">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img id="detailImage" src="" alt="재료 사진" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; box-shadow: var(--shadowMedium); border: 4px solid white;">
+                </div>
                 <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px; padding: 10px 0;">
                     <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
                         <strong style="color: var(--colorTextSub);">재료명</strong>
@@ -120,7 +129,7 @@
                 <input type="hidden" id="edit_id">
                 <div class="formGroup">
                     <label class="formLabel">재료명</label>
-                    <input type="text" id="edit_name" class="input" required>
+                    <input type="text" id="edit_name" class="input" required maxlength="40">
                 </div>
                 <div class="formGroup">
                     <label class="formLabel">분류</label>
@@ -143,6 +152,40 @@
                     <button type="submit" class="btn btnPrimary" style="flex: 1;">저장</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- 검색 결과 (가상 마트 상품) -->
+<div id="searchResultModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 1050; padding: 16px; backdrop-filter: blur(2px);">
+    <div class="card" style="width: 100%; max-width: 520px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,0.2);">
+        <div class="cardBody" style="overflow: auto; flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--colorText);">검색 결과</h2>
+                <button type="button" class="btn btnGhost" style="padding: 6px 12px;" onclick="closeSearchResultModal()" aria-label="닫기">&times;</button>
+            </div>
+            <p id="searchResultHint" style="display: none; margin: 0 0 12px 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.5;"></p>
+            <div id="searchResultList"></div>
+        </div>
+        <div style="padding: 16px; border-top: 1px solid var(--colorBorder); display: flex; gap: 10px; flex-shrink: 0; background: #fafbfc;">
+            <button type="button" class="btn btnSecondary" style="flex: 1;" onclick="closeSearchResultModal()">닫기</button>
+            <button type="button" class="btn btnPrimary" style="flex: 1;" onclick="openPaymentConfirmFromSearch()">냉장고에 추가하기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 가상 결제 확인 -->
+<div id="paymentConfirmModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1060; padding: 16px;">
+    <div class="card" style="width: 100%; max-width: 400px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);">
+        <div class="cardBody" style="text-align: center; padding: 28px 24px;">
+            <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText); line-height: 1.6;">
+                총 구매액은 <span id="paymentTotalAmount" style="color: var(--colorPrimary);">0</span>원입니다.
+            </p>
+            <p style="margin: 0; font-size: 15px; color: var(--colorTextSub);">토스 결제창으로 이동합니다. 테스트 키는 실제 결제되지 않습니다.</p>
+            <div style="display: flex; gap: 10px; margin-top: 24px;">
+                <button type="button" class="btn btnGhost" style="flex: 1;" onclick="closePaymentConfirmModal()">아니오</button>
+                <button type="button" class="btn btnPrimary" style="flex: 1;" onclick="startTossPaymentFromFridge()">결제하기</button>
+            </div>
         </div>
     </div>
 </div>
@@ -220,6 +263,12 @@
         100% { background-color: #f1f3f5; }
     }
 
+    .reqStar {
+        color: #e74c3c;
+        font-weight: 700;
+        margin-left: 2px;
+    }
+
     .fridgeAddForm {
         display: grid;
         grid-template-columns: 2fr 1.2fr 1.4fr auto;
@@ -231,6 +280,20 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+    }
+
+    .searchResultRow {
+        border: 1px solid var(--colorBorder);
+        border-radius: var(--radiusMd);
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        background: #fff;
+    }
+    .searchResultRow label {
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
     }
 
     .fridgeAddButton {
@@ -259,24 +322,552 @@
 </style>
 
     <script>
-        const USER_ID = {{ session.get('userID', 1) }};
+        let addFormCategoryConfirmed = false;
 
-        function renderSkeleton() {
-            return `
-                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
-                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
-                <div class="skeleton-text" style="width: 100%; height: 60px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
-            `;
+        function showToast(message, type="success") {
+            let wrap = document.querySelector('.flashWrap');
+            if (!wrap) {
+                wrap = document.createElement('div');
+                wrap.className = 'flashWrap';
+                const container = document.querySelector('main .container');
+                if (container) container.insertBefore(wrap, container.firstChild);
+            }
+            const msg = document.createElement('div');
+            msg.className = `flashMessage flash${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            msg.innerText = message;
+            wrap.appendChild(msg);
+            
+            setTimeout(() => {
+                msg.style.transition = 'opacity 0.3s ease';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 300);
+            }, 3000);
         }
 
-        // 재료 추가/수정/삭제 시 레시피 새로고침 추가
+        function setExpireMonthMin() {
+            const el = document.getElementById("expire_month");
+            if (!el) return;
+            const now = new Date();
+            const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+            el.setAttribute("min", ym);
+        }
+
+        /**
+         * 분류별 데모용 최대 유통기한(오늘 기준 며칠 뒤까지) — 날짜 풀·월 입력 max·가격 곡선에서 공통 사용.
+         */
+        function categoryShelfMaxDays(category) {
+            const c = String(category || "기타").trim();
+            const map = {
+                수산물: 5,
+                육류: 7,
+                채소: 21,
+                과일: 35,
+                유제품: 28,
+                가공식품: 120,
+                기타: 60,
+            };
+            return map[c] != null ? map[c] : map["기타"];
+        }
+
+        /** 오늘 + 분류별 최대일이 속한 연·월 (type=month 의 max) */
+        function maxMonthStringForCategory(category) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const end = new Date(today);
+            end.setDate(end.getDate() + categoryShelfMaxDays(category));
+            const y = end.getFullYear();
+            const m = String(end.getMonth() + 1).padStart(2, "0");
+            return `${y}-${m}`;
+        }
+
+        /** 분류 확정 전에는 월 비활성화, 확정 후 min~max 로 브라우저 달력에서 막음 */
+        function syncExpireMonthConstraints() {
+            const el = document.getElementById("expire_month");
+            if (!el) return;
+            setExpireMonthMin();
+            const minV = el.getAttribute("min") || "";
+            const cat = ((document.getElementById("category") || {}).value || "").trim();
+            const ready = !!(cat && addFormCategoryConfirmed);
+            if (!ready) {
+                el.disabled = true;
+                el.removeAttribute("max");
+                el.title = "먼저 자동 분류 또는 직접 선택으로 분류를 정한 뒤, 현실적인 범위의 달만 고를 수 있습니다.";
+                el.value = "";
+                return;
+            }
+            el.disabled = false;
+            const maxV = maxMonthStringForCategory(cat);
+            el.setAttribute("max", maxV);
+            el.title = `이 분류는 대략 ${maxV}까지의 달에서만 유통기한을 고를 수 있습니다.`;
+            if (el.value && maxV && el.value > maxV) el.value = "";
+            if (el.value && minV && el.value < minV) el.value = "";
+        }
+
+        /** 서버 `FridgeService.validate_ingredient_name`와 동일 규칙 (형식 + 의미) */
+        const INGREDIENT_NAME_RE = /^[\uAC00-\uD7A3a-zA-Z0-9·\s.,()]+$/;
+        const INGREDIENT_LETTER_RE = /[\uAC00-\uD7A3a-zA-Z]/;
+        const INGREDIENT_DIGITS_ONLY_RE = /^[\d\s]+$/;
+
+        const NONFOOD_FRAGMENTS = [
+            "텔레비전", "스마트폰", "컴퓨터", "자동차", "오토바이", "세탁기", "냉장고",
+            "쇼파", "소파", "침대", "책상", "의자", "책장", "옷장", "화장실", "거실",
+            "노트북", "핸드폰", "태블릿", "에어컨", "티비", "자전거", "비행기", "기차",
+            "지하철", "버스", "택시", "아파트", "건물", "학교", "회사",
+        ];
+        const FOOD_SUBSTRINGS = (() => {
+            const groups = [
+                ["전복", "고등어", "연어", "참치", "생선", "오징어", "문어", "낙지", "홍합", "멸치", "다시마", "미역", "새우", "조개", "굴", "김"],
+                ["소고기", "돼지고기", "닭고기", "삼겹", "목살", "안심", "소시지", "베이컨", "곱창", "양고기", "햄", "닭", "돼지"],
+                ["요거트", "요구르트", "치즈", "버터", "우유", "크림"],
+                ["파스타", "스파게티", "고추장", "된장", "통조림", "식용유", "라면", "과자", "빵", "간장", "설탕", "소금", "김치", "두부"],
+                ["브로콜리", "콩나물", "애호박", "청경채", "깻잎", "시금치", "상추", "배추", "토마토", "피망", "쪽파", "대파", "신파", "실파", "부추", "미나리", "열무", "당근", "양파", "마늘", "감자", "고구마", "오이", "버섯", "무우", "숙주", "파"],
+                ["바나나", "복숭아", "오렌지", "딸기", "수박", "참외", "망고", "키위", "포도", "사과", "배", "귤"],
+            ];
+            const extra = [
+                "계란", "달걀", "쌀", "밀가루", "찹쌀", "현미", "들기름", "참기름",
+                "식초", "물엿", "올리고당", "꿀", "잼", "떡", "당면", "국수", "소면", "중면",
+                "미숫가루", "녹두", "팥", "완두", "옥수수", "들깨", "깨",
+                "carrot", "onion", "garlic", "egg", "milk", "beef", "pork", "chicken",
+            ];
+            return [...new Set(groups.flat().concat(extra))];
+        })();
+
+        function validateIngredientNameClient(raw) {
+            const name = String(raw == null ? "" : raw).trim();
+            if (!name.length) {
+                return { ok: false, msg: "재료명을 입력해주세요." };
+            }
+            if (name.length > 40) {
+                return { ok: false, msg: "재료명은 40글자 이내로 입력해주세요." };
+            }
+            if (!INGREDIENT_NAME_RE.test(name)) {
+                return { ok: false, msg: "재료명은 한글·영문·숫자와 일부 기호( · , . ( ) )만 사용할 수 있습니다." };
+            }
+            if (INGREDIENT_DIGITS_ONLY_RE.test(name)) {
+                return { ok: false, msg: "숫자만으로는 재료명으로 등록할 수 없습니다." };
+            }
+            if (!INGREDIENT_LETTER_RE.test(name)) {
+                return { ok: false, msg: "재료명에 글자(한글 또는 영문)를 포함해주세요." };
+            }
+            const compact = name.replace(/\s+/g, "");
+            const nonfoodSorted = [...NONFOOD_FRAGMENTS].sort((a, b) => b.length - a.length);
+            for (let i = 0; i < nonfoodSorted.length; i++) {
+                if (compact.includes(nonfoodSorted[i])) {
+                    return { ok: false, msg: "올바른 재료명을 입력하세요" };
+                }
+            }
+            const nl = name.toLowerCase();
+            const foodSorted = [...FOOD_SUBSTRINGS].sort((a, b) => b.length - a.length);
+            for (let i = 0; i < foodSorted.length; i++) {
+                if (nl.includes(foodSorted[i].toLowerCase())) {
+                    return { ok: true, msg: "" };
+                }
+            }
+            return { ok: false, msg: "올바른 재료명을 입력하세요" };
+        }
+
+        function setAddFormCategory(value) {
+            const catInput = document.getElementById("category");
+            const disp = document.getElementById("category_display");
+            const manual = document.getElementById("category_manual");
+            const manualWrap = document.getElementById("category_manual_wrap");
+            const v = (value || "").trim();
+            if (catInput) catInput.value = v;
+            if (disp) disp.textContent = v ? v : "—";
+            if (manual) manual.value = v || "";
+            if (!v) {
+                addFormCategoryConfirmed = false;
+                if (manualWrap) manualWrap.style.display = "none";
+                syncExpireMonthConstraints();
+            }
+        }
+
+        async function tryInferCategoryFromServer(opts) {
+            const quiet = opts && opts.quiet;
+            const nameEl = document.getElementById("ingredient_name");
+            if (!nameEl) return false;
+            const q = nameEl.value.trim();
+            const v = validateIngredientNameClient(q);
+            if (!v.ok) {
+                if (!quiet) showToast(v.msg, "error");
+                addFormCategoryConfirmed = false;
+                syncExpireMonthConstraints();
+                return false;
+            }
+            try {
+                const res = await fetch("/api/fridge/infer-category?" + new URLSearchParams({ q }));
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.ok === false) {
+                    addFormCategoryConfirmed = false;
+                    if (!quiet) showToast(data.message || "분류를 불러오지 못했습니다.", "error");
+                    syncExpireMonthConstraints();
+                    return false;
+                }
+                if (data.category) {
+                    setAddFormCategory(data.category);
+                    addFormCategoryConfirmed = true;
+                    syncExpireMonthConstraints();
+                    return true;
+                }
+            } catch (err) {
+                addFormCategoryConfirmed = false;
+                if (!quiet) showToast("분류를 불러오지 못했습니다.", "error");
+                syncExpireMonthConstraints();
+            }
+            return false;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            syncExpireMonthConstraints();
+            const btnAuto = document.getElementById("btn_auto_category");
+            const btnManual = document.getElementById("btn_manual_category");
+            const manualSel = document.getElementById("category_manual");
+            const manualWrap = document.getElementById("category_manual_wrap");
+            const nameIn = document.getElementById("ingredient_name");
+            if (nameIn) {
+                nameIn.addEventListener("input", () => {
+                    setAddFormCategory("");
+                });
+            }
+            if (btnAuto) {
+                btnAuto.addEventListener("click", async () => {
+                    const ok = await tryInferCategoryFromServer();
+                    if (ok) showToast("분류가 적용되었습니다.");
+                });
+            }
+            if (btnManual && manualWrap) {
+                btnManual.addEventListener("click", () => {
+                    const open = manualWrap.style.display === "none" || !manualWrap.style.display;
+                    manualWrap.style.display = open ? "block" : "none";
+                });
+            }
+            if (manualSel) {
+                manualSel.addEventListener("change", () => {
+                    const v = (manualSel.value || "").trim();
+                    if (v) {
+                        setAddFormCategory(v);
+                        addFormCategoryConfirmed = true;
+                        syncExpireMonthConstraints();
+                    } else {
+                        setAddFormCategory("");
+                    }
+                });
+            }
+        });
+
+        const USER_ID = {{ session.get('userID', 1) }};
+        let globalAllItems = [];
+        let globalFridgeGroups = {};
+
+        let currentSearchContext = { baseName: "", category: "", ym: "" };
+        let lastSearchResults = [];
+        let pendingFridgeAdds = [];
+        let pendingPaymentTotal = 0;
+
+        function escapeHtml(text) {
+            const d = document.createElement("div");
+            d.textContent = text == null ? "" : String(text);
+            return d.innerHTML;
+        }
+
+        function formatYMD(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
+        }
+
+        function startOfDay(d) {
+            const x = new Date(d);
+            x.setHours(0, 0, 0, 0);
+            return x;
+        }
+
+        /** from~to(포함) 모든 날짜를 YYYY-MM-DD 배열로 */
+        function datesInInclusiveRange(fromD, toD) {
+            const out = [];
+            const c = startOfDay(new Date(fromD));
+            const end = startOfDay(new Date(toD));
+            while (c <= end) {
+                out.push(formatYMD(new Date(c)));
+                c.setDate(c.getDate() + 1);
+            }
+            return out;
+        }
+
+        /** 검색 조건 문자열 → 결정적 시드 (같은 입력이면 같은 목록) */
+        function searchResultSeed(baseName, category, ymStr) {
+            const s = String(baseName || "") + "\0" + String(category || "") + "\0" + String(ymStr || "");
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            return h >>> 0;
+        }
+
+        function mulberry32(seed) {
+            let a = seed >>> 0;
+            return function () {
+                a |= 0;
+                a = (a + 0x6d2b79f5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function shuffleInPlaceSeeded(arr, rng) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        /** 오늘 ~ 오늘+(분류별 최대일) 날짜 풀 */
+        function expiryDatePoolFromTodayRange(category) {
+            const today = startOfDay(new Date());
+            const end = new Date(today);
+            end.setDate(end.getDate() + categoryShelfMaxDays(category));
+            return datesInInclusiveRange(today, end);
+        }
+
+        /**
+         * 선택 연·월과 분류 현실 범위의 교집합. 교집합이 비면(예: 6개월 뒤 달만 골랐을 때) 분류 범위만 사용.
+         */
+        function expiryDatePoolForYearMonth(ymStr, category) {
+            const catPool = expiryDatePoolFromTodayRange(category);
+            const catSet = new Set(catPool);
+            if (!ymStr || ymStr.length < 7) return catPool;
+
+            const parts = ymStr.split("-");
+            const y = parseInt(parts[0], 10);
+            const mo = parseInt(parts[1], 10);
+            if (!y || !mo || mo < 1 || mo > 12) return catPool;
+
+            const today = startOfDay(new Date());
+            const startOfMonth = new Date(y, mo - 1, 1);
+            const endOfMonth = new Date(y, mo, 0);
+            let from = startOfMonth > today ? startOfMonth : today;
+            let to = endOfMonth;
+            if (from > to) return catPool;
+
+            const monthDates = datesInInclusiveRange(from, to);
+            const intersected = monthDates.filter((d) => catSet.has(d));
+            return intersected.length ? intersected : catPool;
+        }
+
+        /**
+         * 검색 결과 행마다 유통기한이 겹치지 않도록, 풀에서 비복원 추출.
+         * seed로 Fisher–Yates 섞기 → 같은 검색 조건이면 같은 날짜 조합(당일 기준).
+         * 반환 전 날짜 오름차순 정렬로 목록 순서도 고정.
+         */
+        function pickUniqueExpiryDates(ymStr, count, seed, category) {
+            let pool = ymStr && ymStr.length >= 7
+                ? expiryDatePoolForYearMonth(ymStr, category)
+                : expiryDatePoolFromTodayRange(category);
+            if (!pool.length) {
+                return [formatYMD(startOfDay(new Date()))];
+            }
+            const copy = pool.slice();
+            const rng = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+            shuffleInPlaceSeeded(copy, rng);
+            const take = Math.min(count, copy.length);
+            const picked = copy.slice(0, take);
+            picked.sort((a, b) => String(a).localeCompare(String(b)));
+            return picked;
+        }
+
+        /**
+         * 재료명당 고정 느낌의 기본가(원): 문자열 해시 → 1,200~9,999원 구간.
+         * 같은 재료명이면 검색할 때마다 동일한 기본가가 나오도록 함(데모 일관성).
+         */
+        function ingredientBasePrice(name) {
+            const s = String(name || "").trim();
+            if (!s) return 3500;
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            return 1200 + (h % 8800);
+        }
+
+        /**
+         * 기본가 × (남은 보관일 보정). 임박할수록(남은 일수↓) 약간 저렴: 최대 약 22% 낮음 → 가까울수록 할인.
+         */
+        function priceFromBaseAndExpireDate(basePrice, expireDateStr, category) {
+            const today = startOfDay(new Date());
+            const exp = new Date(String(expireDateStr) + "T12:00:00");
+            if (isNaN(exp.getTime())) return Math.max(500, Math.round(basePrice / 10) * 10);
+            const exp0 = startOfDay(exp);
+            const daysLeft = Math.max(0, Math.round((exp0 - today) / 86400000));
+            const refDays = Math.max(14, categoryShelfMaxDays(category));
+            const t = Math.min(1, daysLeft / refDays);
+            const mult = 0.78 + 0.22 * t;
+            let p = Math.round(basePrice * mult);
+            p = Math.max(500, Math.round(p / 10) * 10);
+            return p;
+        }
+
+        function buildMockSearchRows(baseName, category, ymStr) {
+            const seed = searchResultSeed(baseName, category, ymStr || "");
+            const nDesired = 4 + (seed % 3);
+            const uniqueDates = pickUniqueExpiryDates(ymStr, nDesired, seed, category);
+            const base = ingredientBasePrice(baseName);
+            const rows = [];
+            for (let i = 0; i < uniqueDates.length; i++) {
+                const expire_date = uniqueDates[i];
+                const price = priceFromBaseAndExpireDate(base, expire_date, category);
+                rows.push({
+                    id: `sr-${seed}-${i}-${expire_date.replace(/-/g, "")}`,
+                    price,
+                    expire_date,
+                    category,
+                    ingredient_name: baseName,
+                });
+            }
+            rows.sort((a, b) => a.expire_date.localeCompare(b.expire_date));
+            return rows;
+        }
+
+        function openSearchResultModal() {
+            document.getElementById("searchResultModal").style.display = "flex";
+        }
+
+        function closeSearchResultModal() {
+            document.getElementById("searchResultModal").style.display = "none";
+        }
+
+        function closePaymentConfirmModal() {
+            document.getElementById("paymentConfirmModal").style.display = "none";
+        }
+
+        function renderSearchResults(rows, productName) {
+            const list = document.getElementById("searchResultList");
+            const hint = document.getElementById("searchResultHint");
+            hint.textContent = "";
+            hint.style.display = "none";
+            const sorted = rows.slice().sort((a, b) => a.expire_date.localeCompare(b.expire_date));
+            lastSearchResults = sorted;
+            const name = (productName || "").trim() || "식재료";
+            const titleBlock = `
+                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
+                    <div style="font-weight: 800; font-size: 18px; color: var(--colorText);">${escapeHtml(name)}</div>
+                </div>
+            `;
+            const rowBlocks = sorted
+                .map(
+                    (r, idx) => `
+                <div class="searchResultRow" data-row-idx="${idx}">
+                    <label>
+                        <input type="checkbox" class="searchRowChk" data-row-idx="${idx}" style="margin-top: 4px; width: 18px; height: 18px;">
+                        <div style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;">
+                            <div style="font-size: 14px; color: var(--colorText);">
+                                유통기한 <strong style="font-size: 15px;">${r.expire_date}</strong>
+                                <span style="color: var(--colorTextSub); margin: 0 6px;">·</span>
+                                <strong style="color: var(--colorPrimary); font-size: 15px;">${r.price.toLocaleString()}원</strong>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 12px; color: var(--colorTextSub);">수량</span>
+                                <input type="number" class="input searchRowQty" data-row-idx="${idx}" min="1" max="99" value="1"
+                                    style="width: 64px; padding: 6px 8px; font-size: 14px;" onclick="event.stopPropagation();" onkeydown="event.stopPropagation();">
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            `
+                )
+                .join("");
+            list.innerHTML = titleBlock + rowBlocks;
+        }
+
+        function collectSelectedPurchases() {
+            const out = [];
+            let total = 0;
+            lastSearchResults.forEach((r, idx) => {
+                const chk = document.querySelector(`.searchRowChk[data-row-idx="${idx}"]`);
+                const qtyEl = document.querySelector(`.searchRowQty[data-row-idx="${idx}"]`);
+                if (!chk || !chk.checked) return;
+                let q = parseInt(qtyEl && qtyEl.value, 10);
+                if (!Number.isFinite(q) || q < 1) q = 1;
+                if (q > 99) q = 99;
+                total += r.price * q;
+                for (let i = 0; i < q; i++) {
+                    out.push({
+                        ingredient_name: r.ingredient_name,
+                        category: r.category,
+                        expire_date: r.expire_date,
+                    });
+                }
+            });
+            return { lines: out, total };
+        }
+
+        function openPaymentConfirmFromSearch() {
+            const { lines, total } = collectSelectedPurchases();
+            if (lines.length === 0) {
+                showToast("추가할 상품을 선택해주세요.", "error");
+                return;
+            }
+            pendingFridgeAdds = lines;
+            pendingPaymentTotal = total;
+            document.getElementById("paymentTotalAmount").textContent = total.toLocaleString();
+            document.getElementById("paymentConfirmModal").style.display = "flex";
+        }
+
+        async function startTossPaymentFromFridge() {
+            const lines = pendingFridgeAdds.slice();
+            const total = pendingPaymentTotal;
+            closePaymentConfirmModal();
+            if (!lines.length) {
+                showToast("주문 항목이 없습니다.", "error");
+                return;
+            }
+            try {
+                const res = await fetch("/payment/toss/prepare", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lines, total }),
+                    credentials: "same-origin",
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showToast(data.message || "결제 준비에 실패했습니다.", "error");
+                    return;
+                }
+                if (typeof TossPayments === "undefined") {
+                    showToast("토스 결제 스크립트를 불러오지 못했습니다.", "error");
+                    return;
+                }
+                const tossPayments = TossPayments(data.clientKey);
+                const payment = tossPayments.payment({ customerKey: data.customerKey });
+                await payment.requestPayment({
+                    method: "CARD",
+                    amount: { currency: "KRW", value: data.amount },
+                    orderId: data.orderId,
+                    orderName: data.orderName,
+                    successUrl: data.successUrl,
+                    failUrl: data.failUrl,
+                    card: { useEscrow: false, flowMode: "DEFAULT" },
+                });
+            } catch (e) {
+                if (e && e.code === "USER_CANCEL") {
+                    showToast("결제를 취소했습니다.", "error");
+                    return;
+                }
+                console.error(e);
+                showToast("결제창을 열 수 없습니다.", "error");
+            }
+        }
+
         async function loadItems() {
             const sort = document.getElementById('sortSelect').value;
             const list = document.getElementById('itemList');
             const loadingState = document.getElementById('loadingState');
             
-            // 로딩 UI 표시, 목록 숨김
-            loadingState.style.display = 'block';
+            loadingState.style.display = 'grid';
             list.style.display = 'none';
             
             try {
@@ -289,74 +880,109 @@
                     return;
                 }
                 
-                // 데이터 로딩 완료 시 처리
                 loadingState.style.display = 'none';
-                list.style.display = 'block';
+                list.style.display = 'grid';
 
                 if (!data.items || data.items.length === 0) {
-                    list.innerHTML = '<div class="emptyState">냉장고가 텅 비어있습니다.<br>위에서 식재료를 추가해보세요!</div>';
+                    list.style.display = 'block';
+                    list.innerHTML = '<div class="emptyState" style="background: white; border-radius: var(--radiusLg); box-shadow: var(--shadowSoft);">냉장고가 텅 비어있습니다.<br>위에서 식재료를 검색해 담아보세요!</div>';
                     return;
                 }
 
+                globalAllItems = data.items;
+                globalFridgeGroups = {};
+
                 data.items.forEach(item => {
+                    if (!globalFridgeGroups[item.ingredient_name]) {
+                        globalFridgeGroups[item.ingredient_name] = {
+                            ...item,
+                            quantity: 1,
+                            instances: [item]
+                        };
+                    } else {
+                        globalFridgeGroups[item.ingredient_name].quantity += 1;
+                        globalFridgeGroups[item.ingredient_name].instances.push(item);
+                        
+                        if (item.days_left < globalFridgeGroups[item.ingredient_name].days_left) {
+                            globalFridgeGroups[item.ingredient_name].days_left = item.days_left;
+                            globalFridgeGroups[item.ingredient_name].expire_date = item.expire_date;
+                        }
+                    }
+                });
+
+                let groupedArray = Object.values(globalFridgeGroups);
+                
+                if (sort === 'expire_asc') {
+                    groupedArray.sort((a, b) => a.days_left - b.days_left);
+                } else if (sort === 'name_asc') {
+                    groupedArray.sort((a, b) => a.ingredient_name.localeCompare(b.ingredient_name));
+                } else if (sort === 'created_desc') {
+                    groupedArray.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                }
+
+                groupedArray.forEach(group => {
                     let badgeClass = 'badge-success';
-                    let badgeText = `D-${item.days_left}`;
-                    
-                    if (item.days_left < 0) {
+                    let badgeText = '';
+
+                    // 임박(3일 이내) 혹은 지남(0 이하)인 항목 수 세기
+                    const imminentCount = group.instances.filter(inst => inst.days_left <= 3).length;
+
+                    if (imminentCount > 0) {
                         badgeClass = 'badge-danger';
-                        badgeText = `경과 (D+${Math.abs(item.days_left)})`;
-                    } else if (item.days_left <= 3) {
-                        badgeClass = 'badge-warning'; // 3일 이하 임박 
-                    } else if (item.days_left === 0) {
-                        badgeClass = 'badge-danger';
-                        badgeText = `D-Day`;
+                        badgeText = `유통기한 임박: ${imminentCount}개`;
+                    } else {
+                        badgeClass = 'badge-success';
+                        badgeText = `신선 보관중`;
                     }
 
-                    const li = document.createElement('li');
-                    li.style = "padding: 16px 20px; border-bottom: 1px solid var(--colorBorder); display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; cursor: pointer;";
-                    li.onmouseover = function() { this.style.backgroundColor = '#f8f9fa'; };
-                    li.onmouseout = function() { this.style.backgroundColor = 'transparent'; };
-                    
-                    // 뱃지 인라인 스타일 적용
                     let badgeStyle = '';
                     if (badgeClass === 'badge-success') {
-                        badgeStyle = 'background-color: #5FAE7B; color: white;';
+                        badgeStyle = 'background-color: #2ecc71; color: white;';
                     } else if (badgeClass === 'badge-warning') {
-                        badgeStyle = 'background-color: #F4A261; color: #2c3e50;';
+                        badgeStyle = 'background-color: #f1c40f; color: #2c3e50;';
                     } else {
-                        badgeStyle = 'background-color: #E76F51; color: white;';
+                        badgeStyle = 'background-color: #e74c3c; color: white;';
                     }
 
-                    // 아이콘 클래스 결정
-                    let iconClass = 'fa-solid fa-leaf'; // 기본(채소 등)
-                    if (item.category === '과일') iconClass = 'fa-solid fa-apple-whole';
-                    else if (item.category === '육류') iconClass = 'fa-solid fa-drumstick-bite';
-                    else if (item.category === '수산물') iconClass = 'fa-solid fa-fish';
-                    else if (item.category === '유제품') iconClass = 'fa-solid fa-cheese';
-                    else if (item.category === '가공식품') iconClass = 'fa-solid fa-box-open';
-                    else if (item.category === '기타') iconClass = 'fa-solid fa-utensils';
+                    const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=200&h=200&auto=format&fit=crop';
 
-                 
+                    const categoryLabels = [...new Set(
+                        group.instances.map(inst => {
+                            const c = (inst.category || '기타').trim();
+                            return c || '기타';
+                        })
+                    )];
+                    const categoryDisplay = categoryLabels.length === 1
+                        ? categoryLabels[0]
+                        : categoryLabels.join(' · ');
+
+                    const singleExpire =
+                        group.quantity === 1
+                            ? (group.instances[0]?.expire_date || group.expire_date || "").trim()
+                            : "";
+                    const singleExpiryHtml =
+                        singleExpire !== ""
+                            ? `<div style="font-size: 13px; color: var(--colorTextSub); margin-bottom: 6px; font-weight: 600;">~${singleExpire}까지</div>`
+                            : "";
+                    
+                    const li = document.createElement('li');
+                    li.style = "background: white; border: 1px solid var(--colorBorder); border-radius: var(--radiusLg); padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative;";
+                    li.onmouseover = function() { this.style.transform = 'translateY(-4px)'; this.style.boxShadow = 'var(--shadowMedium)'; };
+                    li.onmouseout = function() { this.style.transform = 'none'; this.style.boxShadow = 'none'; };
+                    li.onclick = () => openGroupModal(group.ingredient_name);
+                    
                     li.innerHTML = `
-                        <div style="flex: 1; display: flex; align-items: center; gap: 16px; cursor: pointer;" onclick="openModal(${item.id})">
-                            <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #f1f3f5; display: flex; align-items: center; justify-content: center; color: var(--colorPrimary); font-size: 18px;">
-                                <i class="${iconClass}"></i>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-size: 16px; font-weight: 600; color: var(--colorText);">${item.ingredient_name}</span>
-                                    <span class="badge-dday" style="${badgeStyle}">${badgeText}</span>
-                                </div>
-                                <div style="font-size: 13px; color: var(--colorTextSub); display: flex; gap: 8px; align-items: center;">
-                                    <span>${item.category}</span>
-                                    <span style="color: #dee2e6;">|</span>
-                                    <span><i class="fa-regular fa-clock" style="margin-right: 4px;"></i>${item.expire_date}</span>
-                                </div>
-                            </div>
+                        ${group.quantity > 1 ? `<div style="position: absolute; top: -8px; right: -8px; background: var(--colorPrimary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: var(--shadowSoft);">+${group.quantity}</div>` : ''}
+                        
+                        <div style="width: 76px; height: 76px; border-radius: 50%; overflow: hidden; background-color: #f1f3f5; margin: 0 auto 16px auto; box-shadow: var(--shadowSoft); border: 3px solid white;">
+                            <img src="${imageUrl}" alt="${group.ingredient_name}" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                        <button class="btn btnGhost" style="color: #E76F51; border: 1px solid gray border-radius: 20; width:36px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="deleteItem(${item.id})" title="삭제">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
+                        <div style="font-size: 17px; font-weight: 800; color: var(--colorText); margin-bottom: 4px;">${group.ingredient_name}</div>
+                        <div style="font-size: 13px; font-weight: 600; color: var(--colorPrimary); margin-bottom: 8px; letter-spacing: -0.02em;">${categoryDisplay}</div>
+                        ${singleExpiryHtml}
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                            ${imminentCount > 0 ? `<span class="badge-dday" style="${badgeStyle}; font-size: 11px; padding: 4px 10px;">${badgeText}</span>` : `<span style="font-size: 13px; color: #2ecc71; font-weight: 600;">${badgeText}</span>`}
+                        </div>
                     `;
                     list.appendChild(li);
                 });
@@ -365,66 +991,95 @@
             }
         }
 
-        // 재료 상세 모달 열기
-        async function openModal(id) {
-            try {
-                const res = await fetch(`/api/fridge/item/${id}`);
-                if (!res.ok) {
-                    alert('상세 정보를 불러올 수 없습니다.');
-                    return;
-                }
-                const data = await res.json();
-                const item = data.item;
+        function openGroupModal(ingredientName) {
+            const group = globalFridgeGroups[ingredientName];
+            if (!group) return;
 
-                document.getElementById('detailName').innerText = item.ingredient_name;
-                document.getElementById('detailCategory').innerText = item.category;
-                document.getElementById('detailExpire').innerText = item.expire_date;
-                
-                // 등록일시는 YYYY-MM-DD 만 표시
-                const createdDate = item.created_at ? item.created_at.split(' ')[0] : '-';
-                document.getElementById('detailCreated').innerText = createdDate;
+            const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=200&h=200&auto=format&fit=crop';
+            document.getElementById('modalTitle').innerText = `${ingredientName} 상세정보`;
 
+            const contentDiv = document.getElementById('modalContent');
+            
+            group.instances.sort((a, b) => a.days_left - b.days_left);
+
+            let instancesHtml = `<div style="font-size: 16px; font-weight: 700; color: var(--colorText); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--colorBorder);">보관 중인 항목 <span style="color: var(--colorPrimary);">${group.quantity}개</span></div>`;
+            
+            group.instances.forEach((inst) => {
                 let badgeClass = 'badge-success';
-                let badgeText = `D-${item.days_left}`;
-                if (item.days_left < 0) {
-                    badgeClass = 'badge-danger';
-                    badgeText = `(D+${Math.abs(item.days_left)})`;
-                } else if (item.days_left <= 3) {
-                    badgeClass = 'badge-warning';
-                } else if (item.days_left === 0) {
-                    badgeClass = 'badge-danger';
-                    badgeText = `D-Day`;
-                }
-                
-                const badge = document.getElementById('detailBadge');
-                badge.className = `badge-dday ${badgeClass}`;
-                badge.innerText = badgeText;
-                
-                if (badgeClass === 'badge-success') {
-                    badge.style.backgroundColor = '#2ecc71';
-                    badge.style.color = 'white';
-                } else if (badgeClass === 'badge-warning') {
-                    badge.style.backgroundColor = '#f1c40f';
-                    badge.style.color = '#2c3e50';
-                } else {
-                    badge.style.backgroundColor = '#e74c3c';
-                    badge.style.color = 'white';
-                }
+                let badgeText = `D-${inst.days_left}`;
+                if (inst.days_left < 0) { badgeClass = 'badge-danger'; badgeText = `(D+${Math.abs(inst.days_left)})`; }
+                else if (inst.days_left <= 3) { badgeClass = 'badge-warning'; }
+                else if (inst.days_left === 0) { badgeClass = 'badge-danger'; badgeText = `D-Day`; }
 
-                // 폼에도 값 미리 채워넣기
-                document.getElementById('edit_id').value = item.id;
-                document.getElementById('edit_name').value = item.ingredient_name;
-                document.getElementById('edit_category').value = item.category;
-                document.getElementById('edit_expire').value = item.expire_date;
+                let badgeStyle = badgeClass === 'badge-success' ? 'background-color: #2ecc71; color: white;' :
+                                 badgeClass === 'badge-warning' ? 'background-color: #f1c40f; color: #2c3e50;' :
+                                 'background-color: #e74c3c; color: white;';
 
-                cancelEdit(); // 상세정보 보기 모드로 초기화
-                document.getElementById('itemModal').style.display = 'flex';
-                
-                // 모달 기본 높이 설정 (스크롤 없도록)
-                document.querySelector('#itemModal .card').style.maxHeight = 'auto';
-                document.querySelector('#itemModal .card').style.overflowY = 'visible';
-            } catch (e) {
-                console.error(e);
+                const createdDate = inst.created_at ? inst.created_at.split(' ')[0] : '-';
+
+                instancesHtml += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; background: #f8f9fa; border-radius: var(--radiusMd); margin-bottom: 10px; border: 1px solid #e9ecef;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 15px; font-weight: 700; color: var(--colorText);">${inst.expire_date}까지</span>
+                                <span class="badge-dday" style="${badgeStyle} padding: 3px 8px; font-size: 11px;">${badgeText}</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--colorTextSub);">등록일: ${createdDate} | ${inst.category || '기타'}</div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <button class="btn btnGhost" style="padding: 6px 12px; font-size: 12px; height: auto; color: #e74c3c; background: #fff5f5;" onclick="deleteItem(${inst.id})">삭제</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            contentDiv.innerHTML = `
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <img src="${imageUrl}" alt="재료 사진" style="width: 140px; height: 140px; object-fit: cover; border-radius: 50%; box-shadow: var(--shadowMedium); border: 5px solid white;">
+                </div>
+                <div style="display: flex; flex-direction: column; padding: 0;">
+                    ${instancesHtml}
+                </div>
+                <div style="margin-top: 24px;">
+                    <button type="button" class="btn btnSecondary" style="width: 100%; font-weight: 600; padding: 12px; border-radius: 8px;" onclick="closeModal()">닫기</button>
+                </div>
+            `;
+
+            document.getElementById('editForm').style.display = 'none';
+            contentDiv.style.display = 'block';
+            document.getElementById('itemModal').style.display = 'flex';
+        }
+
+        function openEditForm(id) {
+            const item = globalAllItems.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('edit_id').value = item.id;
+            document.getElementById('edit_name').value = item.ingredient_name;
+            document.getElementById('edit_expire').value = item.expire_date;
+            const cat = item.category || '기타';
+            const editCat = document.getElementById('edit_category');
+            if ([...editCat.options].some(o => o.value === cat)) {
+                editCat.value = cat;
+            } else {
+                editCat.value = '기타';
+            }
+
+            document.getElementById('modalContent').style.display = 'none';
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('modalTitle').innerText = '재료 수정';
+        }
+
+        function cancelEdit() {
+            const name = document.getElementById('edit_name').value;
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('modalContent').style.display = 'block';
+            
+            // Re-open the group modal to refresh the state
+            if(globalFridgeGroups[name]) {
+                openGroupModal(name);
+            } else {
+                closeModal();
             }
         }
 
@@ -432,26 +1087,20 @@
             document.getElementById('itemModal').style.display = 'none';
         }
 
-        function showEditForm() {
-            document.getElementById('modalContent').style.display = 'none';
-            document.getElementById('editForm').style.display = 'block';
-            document.getElementById('modalTitle').innerText = '재료 수정';
-        }
-
-        function cancelEdit() {
-            document.getElementById('modalContent').style.display = 'block';
-            document.getElementById('editForm').style.display = 'none';
-            document.getElementById('modalTitle').innerText = '재료 상세';
-        }
-
         // 재료 수정 처리
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit_id').value;
+            const editName = document.getElementById('edit_name').value;
+            const nameCheck = validateIngredientNameClient(editName);
+            if (!nameCheck.ok) {
+                showToast(nameCheck.msg, 'error');
+                return;
+            }
             const payload = {
-                ingredient_name: document.getElementById('edit_name').value,
-                category: document.getElementById('edit_category').value,
-                expire_date: document.getElementById('edit_expire').value
+                ingredient_name: editName,
+                expire_date: document.getElementById('edit_expire').value,
+                category: document.getElementById('edit_category').value
             };
 
             try {
@@ -462,46 +1111,45 @@
                 });
                 
                 if (res.ok) {
-                    closeModal();
-                    loadItems(); 
+                    showToast('성공적으로 수정되었습니다.');
+                    await loadItems(); 
                     loadRecommendedRecipes();
+                    
+                    openGroupModal(payload.ingredient_name);
                 } else {
                     const data = await res.json();
-                    alert(data.message || '수정에 실패했습니다.');
+                    showToast(data.message || '수정에 실패했습니다.', 'error');
                 }
             } catch (err) {
-                alert("서버와의 통신 오류가 발생했습니다.");
+                showToast('서버와의 통신 오류가 발생했습니다.', 'error');
             }
         });
 
-        // 재료 추가 처리
-        document.getElementById('addForm').addEventListener('submit', async (e) => {
+        // 검색 → 가상 상품 목록 팝업
+        document.getElementById('addForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const payload = {
-                user_id: USER_ID,
-                ingredient_name: document.getElementById('ingredient_name').value,
-                category: document.getElementById('category').value,
-                expire_date: document.getElementById('expire_date').value
-            };
+            const baseName = document.getElementById('ingredient_name').value.trim();
+            const category = document.getElementById('category').value.trim();
+            const ym = document.getElementById('expire_month').value.trim();
 
-            try {
-                const res = await fetch('/api/fridge/add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (res.ok) {
-                    document.getElementById('addForm').reset();
-                    loadItems(); // 목록 새로고침
-                    loadRecommendedRecipes(); // 추천 레시피 새로고침
-                } else {
-                    const data = await res.json();
-                    alert(data.message || '추가에 실패했습니다.');
-                }
-            } catch (err) {
-                alert("서버와의 통신 오류가 발생했습니다.");
+            if (!baseName) {
+                showToast('재료명을 입력해주세요.', 'error');
+                return;
             }
+            const nameCheck = validateIngredientNameClient(baseName);
+            if (!nameCheck.ok) {
+                showToast(nameCheck.msg, 'error');
+                return;
+            }
+            if (!addFormCategoryConfirmed || !category) {
+                showToast('자동 분류 또는 직접 선택으로 분류를 정한 뒤 검색해 주세요.', 'error');
+                return;
+            }
+
+            currentSearchContext = { baseName, category, ym };
+            const rows = buildMockSearchRows(baseName, category, ym);
+            renderSearchResults(rows, baseName);
+            openSearchResultModal();
         });
 
         // 재료 삭제 처리
@@ -510,14 +1158,23 @@
             try {
                 const res = await fetch(`/api/fridge/delete/${id}`, { method: 'DELETE' });
                 if (res.ok) {
-                    loadItems();
+                    showToast('성공적으로 삭제되었습니다.');
+                    const item = globalAllItems.find(i => i.id === id);
+                    const groupName = item ? item.ingredient_name : null;
+                    
+                    await loadItems();
                     loadRecommendedRecipes();
-                    closeModal(); // 모달이 열려있다면 닫기
+                    
+                    if (groupName && globalFridgeGroups[groupName]) {
+                        openGroupModal(groupName);
+                    } else {
+                        closeModal();
+                    }
                 } else {
-                    alert('삭제에 실패했습니다.');
+                    showToast('삭제에 실패했습니다.', 'error');
                 }
             } catch (err) {
-                alert("서버 통신 오류");
+                showToast('서버 통신 오류가 발생했습니다.', 'error');
             }
         }
 
@@ -525,7 +1182,6 @@
             const list = document.getElementById('recipeList');
             const section = document.getElementById('recipeSection');
             
-            // 로딩 스켈레톤 UI 표시
             section.style.display = 'block';
             list.innerHTML = `
                 <div class="skeletonCard"></div>
@@ -564,7 +1220,6 @@
             }
         }
 
-        // 페이지 로드 시 최초 데이터 조회
         loadItems();
         loadRecommendedRecipes();
     </script>

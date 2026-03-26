@@ -153,6 +153,18 @@ fridge_bp = Blueprint('fridge', __name__, url_prefix='/api/fridge')
 #         pass
 #     return None if 'userID' not in session else {'id': session['userID']}
 
+@fridge_bp.route('/infer-category', methods=['GET'])
+def infer_ingredient_category():
+    """재료명으로 분류 추정(로그인 불필요). 쿼리: q="""
+    q = (request.args.get('q') or '').strip()
+    if not q:
+        return jsonify({"ok": True, "category": "기타"}), 200
+    ok, err = FridgeService.validate_ingredient_name(q)
+    if not ok:
+        return jsonify({"ok": False, "message": err}), 400
+    cat = FridgeService.infer_category_from_name(q)
+    return jsonify({"ok": True, "category": cat}), 200
+
 @fridge_bp.route('/<int:user_id>', methods=['GET'])
 def get_fridge_items(user_id):
     """특정 사용자의 냉장고 재료 목록 조회"""
@@ -228,14 +240,18 @@ def edit_fridge_item(ingredient_id):
     current_user = AuthService.getCurrentUser()
     if not current_user:
         return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
-        
+
     data = request.get_json(silent=True) or request.form
-    user_id = current_user.get('id')
+    user_id = current_user.ID
     ingredient_name = (data.get('ingredient_name') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
 
-    # category 인자 제거
-    ok, result = FridgeService.edit_ingredient(user_id, ingredient_id, ingredient_name, expire_date_str)
+    edit_kwargs = {}
+    if "category" in data:
+        edit_kwargs["category"] = data.get("category")
+    ok, result = FridgeService.edit_ingredient(
+        user_id, ingredient_id, ingredient_name, expire_date_str, **edit_kwargs
+    )
     
     if ok:
         return jsonify({"ok": True, "message": "수정 성공", "item": result.to_dict()}), 200
@@ -254,9 +270,9 @@ def add_fridge_item():
     user_id = current_user.ID
     ingredient_name = (data.get('ingredient_name') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
+    category = data.get("category")
 
-    # category 인자 제거
-    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str)
+    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str, category)
     
     if ok:
         return jsonify({"ok": True, "message": "추가 성공", "item": result.to_dict()}), 201
