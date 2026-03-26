@@ -77,7 +77,7 @@
 
           <div class="recipeActions">
             <a href="{{ url_for('recipe.recipeDetailPage', recipeID=recipe.RCP_SEQ) }}" class="btn btnPrimary">상세 보기</a>
-            <form action="{{ url_for('bookmarks.addBookmark', recipeID=recipe.recipeID) }}" method="post" style="display:inline;">
+            <form action="{{ url_for('addBookmark', recipeID=recipe.RCP_SEQ) }}" method="post" style="display:inline;">
               <button type="submit" class="btn btnSecondary">북마크</button>
             </form>
           </div>
