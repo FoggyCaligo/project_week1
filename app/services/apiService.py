@@ -22,6 +22,7 @@
 #     print(f"[{s}] -> 결과: {clean_ingredient_name(s)}")
 
 import random
+import re
 import requests
 from app.models.recipe import Recipe
 from sqlalchemy import func, cast, Float
@@ -55,48 +56,100 @@ class ApiService:
             return []
     API_KEY = "sample"
     BASE_URL = f"http://openapi.foodsafetykorea.go.kr/api/{API_KEY}/COOKRCP01/json"
-
     @staticmethod
-    def searchRecipesFromAPI(keyword, page=1):
+    def searchRecipesFromAPI(keyword, user_id=None, page=1):
         """
-        [공공데이터 API 전용] 재료명으로 외부 레시피를 검색합니다.
+        [로그인 추천 검색용]
+        공공데이터 API로 후보 레시피를 찾은 뒤,
+        사용자 냉장고 재료 + 검색창에 직접 입력한 재료를 기준으로
+        보유 재료/부족 재료/일치율을 다시 계산합니다.
         """
         if not keyword:
             return [], 0
 
+        from app.models.ingredient import UserIngredient
+        from app.services.fridge_service import FridgeService
+
+        exclude_ingredients = {
+            "기준", "재료", "주재료", "부재료", "양념", "소스", "고명", "선택", "준비", "약간",
+            "인분", "인분기준", "내용물", "함량", "구성", "추가", "가정간편식",
+            "소금", "설탕", "후추", "후춧가루", "고춧가루", "밀가루", "녹말가루", "전분",
+            "식용유", "참기름", "들기름", "올리브유", "간장", "진간장", "국간장", "저염간장",
+            "다진마늘", "마늘", "생강", "맛술", "청주", "물", "육수", "통깨", "깨",
+            "올리고당", "물엿", "식초", "케찹", "마요네즈", "고추장", "된장"
+        }
+
         start = (page - 1) * 10 + 1
         end = start + 10 - 1
-        
-        # API 요청 URL 조립 (RCP_PARTS_DTLS 파라미터에 검색어 전달)
-        # 형식: /시작/종료/RCP_NM=이름&RCP_PARTS_DTLS=재료
         url = f"{ApiService.BASE_URL}/{start}/{end}/RCP_PARTS_DTLS={keyword}"
-        print(f"🚀 요청 URL: {url}")  # 1번 단서: URL이 제대로 만들어졌나?
-        
+        print(f"🚀 요청 URL: {url}")
+
         try:
-            res = requests.get(url)
+            # 1) 냉장고 재료 표준화
+            owned_standard_set = set()
+            if user_id is not None:
+                owned_items = UserIngredient.query.filter_by(userID=user_id).all()
+                owned_standard_set = {
+                    FridgeService.get_standard_name(item.ingredientName)
+                    for item in owned_items
+                    if item.ingredientName
+                }
+
+            # 2) 검색창에 직접 입력한 재료도 보유 재료로 간주
+            input_keywords = [k.strip() for k in re.split(r'[\s,]+', keyword) if k.strip()]
+            input_standard_set = {FridgeService.get_standard_name(name) for name in input_keywords}
+            effective_owned_set = owned_standard_set | input_standard_set
+
+            res = requests.get(url, timeout=5)
             data = res.json()
-            
-            # 데이터가 없을 경우 처리
+
             if "COOKRCP01" not in data or data["COOKRCP01"]["total_count"] == "0":
                 print(f"[{keyword}] 검색 결과가 없습니다.")
                 return [], 0
 
             total_count = int(data["COOKRCP01"]["total_count"])
-            print(f"📊 전체 레시피 개수: {total_count}")
-            total_pages = (total_count + 9) // 10 # 10개씩 나눌 때 올림 처리
-            
-            rows = data["COOKRCP01"].get("row", [])            
+            total_pages = (total_count + 9) // 10
+            rows = data["COOKRCP01"].get("row", [])
             refined_list = []
-            
+
             for r in rows:
+                raw_parts = r.get("RCP_PARTS_DTLS", "")
+                cleaned_full_text = FridgeService.clean_ingredient_name(raw_parts)
+                parts_list = re.split(r'[\s,]+', cleaned_full_text)
+
+                have_ingr = []
+                missing_ingr = []
+
+                for part in parts_list:
+                    p_clean = part.strip()
+                    if not p_clean or len(p_clean) < 2 or p_clean in exclude_ingredients:
+                        continue
+
+                    recipe_std_name = FridgeService.get_standard_name(p_clean)
+                    if recipe_std_name in exclude_ingredients:
+                        continue
+
+                    if recipe_std_name in effective_owned_set:
+                        if p_clean not in have_ingr:
+                            have_ingr.append(p_clean)
+                    else:
+                        if p_clean not in missing_ingr:
+                            missing_ingr.append(p_clean)
+
+                total = len(have_ingr) + len(missing_ingr)
+                match_percent = round((len(have_ingr) / total) * 100) if total > 0 else 0
+
                 refined_list.append({
-                    "recipeID": r.get("RCP_SEQ"),          # 고유 번호
-                    "RCP_NM": r.get("RCP_NM"),             # 레시피 이름
+                    "recipeID": r.get("RCP_SEQ"),
+                    "RCP_NM": r.get("RCP_NM"),
                     "ATT_FILE_NO_MAIN": r.get("ATT_FILE_NO_MAIN") or "/static/images/default_recipe.jpg",
-                    "RCP_PAT2": r.get("RCP_PAT2", "요리"),  # 카테고리 (국, 반찬 등)
-                    "cookTime": 20,                        # API에 없으니 기본값
-                    "matchPercent": 100 if keyword in r.get("RCP_PARTS_DTLS", "") else 0
+                    "RCP_PAT2": r.get("RCP_PAT2", "요리"),
+                    "cookTime": 20,
+                    "haveIngredients": have_ingr,
+                    "missingIngredients": missing_ingr,
+                    "matchPercent": match_percent,
                 })
+
             return refined_list, total_pages
 
         except Exception as e:
