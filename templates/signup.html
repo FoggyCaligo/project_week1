@@ -9,6 +9,7 @@
       <p class="authText">계정을 만들고 북마크와 후기를 저장하세요.</p>
 
       <form action="{{ url_for('signupPage') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="formGroup">
           <label for="userName" class="formLabel">아이디</label>
           <div style="display: flex; gap: 8px;">
