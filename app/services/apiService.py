@@ -23,7 +23,7 @@
 
 import random
 import requests
-from app.models.recipe import FoodRecipe
+from app.models.recipe import Recipe
 from sqlalchemy import func
 
 class ApiService:
@@ -32,7 +32,7 @@ class ApiService:
     def getRandomRecommendations(count=4):
         try:
             # 1. DB에서 랜덤하게 count개만큼 쿼리 (ORDER BY RAND())
-            random_recipes = FoodRecipe.query.order_by(func.rand()).limit(count).all()
+            random_recipes = Recipe.query.order_by(func.rand()).limit(count).all()
             
             # 2. 템플릿에서 쓰기 편하게 리스트로 가공
             refined_list = []
@@ -103,7 +103,7 @@ class ApiService:
         """
         try:
             # 1. DB에서 최신순(혹은 ID 역순)으로 페이징 쿼리
-            pagination = FoodRecipe.query.order_by(FoodRecipe.RCP_SEQ.desc()).paginate(
+            pagination = Recipe.query.order_by(Recipe.RCP_SEQ.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
@@ -131,9 +131,9 @@ class ApiService:
         try:
             # 1. RCP_PARTS_DTLS(재료상세) 컬럼에 키워드가 포함된 것 찾기
             search_term = f"%{keyword}%"
-            pagination = FoodRecipe.query.filter(
-                FoodRecipe.RCP_PARTS_DTLS.like(search_term)
-            ).order_by(FoodRecipe.RCP_SEQ.desc()).paginate(
+            pagination = Recipe.query.filter(
+                Recipe.RCP_PARTS_DTLS.like(search_term)
+            ).order_by(Recipe.RCP_SEQ.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
 
