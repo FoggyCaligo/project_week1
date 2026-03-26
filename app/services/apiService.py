@@ -99,17 +99,29 @@ class ApiService:
             print(f"[API Search Error]: {e}")
             return [], 1
     @staticmethod
-    def getAllRecipesWithPagination(page=1, per_page=10):
+    def getAllRecipesWithPagination(page=1, per_page=10, sort='latest'):
         """
         [비회원/전체용] DB에서 전체 레시피를 페이징하여 가져옵니다.
         """
         try:
-            # 1. DB에서 최신순(혹은 ID 역순)으로 페이징 쿼리
-            pagination = Recipe.query.order_by(Recipe.rcpSeq.desc()).paginate(
+            # 🎯 [1단계: 주문에 맞춰 칼 갈기] 정렬 기준 설정
+            if sort == 'name':
+                # 이름 가나다순 (오름차순)
+                order_criteria = Recipe.rcpNm.asc()
+            elif sort == 'cookTime':
+                # 데이터에 cookTime이 없으니 칼로리(infoEng) 낮은 순으로 센스 있게!
+                # (만약 진짜 조리시간 컬럼이 있다면 그걸 쓰시면 됩니다)
+                order_criteria = Recipe.infoEng.asc() 
+            else:
+                # 기본값: 최신순 (ID 역순)
+                order_criteria = Recipe.rcpSeq.desc()
+
+            # 🎯 [2단계: 정렬된 쿼리로 페이징]
+            pagination = Recipe.query.order_by(order_criteria).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
-            # 2. 템플릿(all_recipes.html) 규격에 맞게 가공
+            # 3. 템플릿 규격에 맞게 가공 (기존 로직 유지)
             refined_recipes = []
             for r in pagination.items:
                 refined_recipes.append({
@@ -117,7 +129,7 @@ class ApiService:
                     "recipeName": r.rcpNm,
                     "imageUrl": r.attFileNoMain or "/static/images/default_recipe.jpg",
                     "category": r.rcpPat2 or "일반",
-                    "parts_dtls": r.rcpPartsDtls or "", # 전체 레시피 요약용
+                    "parts_dtls": r.rcpPartsDtls or "",
                 })
             
             return refined_recipes, pagination

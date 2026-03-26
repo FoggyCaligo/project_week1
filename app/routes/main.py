@@ -89,11 +89,13 @@ def recommendPage():
 def allRecipesPage():
     # 1. 입력값만 받아서
     page = request.args.get('page', 1, type=int)
+    sort_type = request.args.get('sort', 'latest')
     
     # 2. 서비스에 맡기고 결과만 받음
-    recipes, pagination = ApiService.getAllRecipesWithPagination(page=page)
+    recipes, pagination = ApiService.getAllRecipesWithPagination(page=page, sort=sort_type)
     
     # 3. 서빙(렌더링)
     return render_template("recipe.html", 
                            recipes=recipes, 
-                           pagination=pagination)
+                           pagination=pagination,
+                           current_sort=sort_type)
