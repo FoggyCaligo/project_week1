@@ -117,7 +117,9 @@
   <div class="container">
     <div class="sectionHeader">
       <h2 class="sectionTitle">{% if currentUser %}맞춤 추천 요리{% else %}인기 레시피{% endif %}</h2>
-      <a href="{{ url_for('main.allRecipesPage') }}" class="btn btnGhost">전체 보기</a>
+      <a href="{{ url_for('main.recommendPage') if currentUser else url_for('main.allRecipesPage') }}" class="btn btnGhost">
+        {% if currentUser %}맞춤 추천 더보기{% else %}전체 레시피 보기{% endif %}
+      </a>
     </div>
     <div class="grid3">
   {% for recipe in todayRecipes %}
