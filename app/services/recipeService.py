@@ -21,22 +21,52 @@ class RecipeDetailService:
         detail_ingredients = []
         owned_count = 0
         if recipe.rcpPartsDtls:
-            # 줄바꿈이나 쉼표로 구분된 재료 텍스트 파싱
-            import re
-            parts = re.split(r'[,|\n]', recipe.rcpPartsDtls)
+            # [1단계: 세척]
+            clean_text = recipe.rcpPartsDtls.replace('<br>', '\n').replace('<br/>', '\n')
+            clean_text = re.sub(r'<.*?>', '', clean_text)
+            clean_text = re.sub(r'\d+인분\s*기준', '', clean_text).strip()
+            clean_text = clean_text.replace('•', '').strip()
+
+            # 🎯 [2단계: 정밀 분리] 괄호 안의 쉼표는 무시하고 자르기!
+            # 정규표현식 설명: 괄호()가 닫히지 않은 상태의 쉼표는 건너뛰고, 바깥 쉼표나 줄바꿈(\n)만 잡습니다.
+            parts = re.split(r',(?![^()]*\))|\n', clean_text)
+            
+            current_section = "주재료"
+            
             for part in parts:
-                raw_name = part.strip()
-                if not raw_name: continue
+                raw_item = part.strip()
+                if not raw_item: continue
                 
-                # 재료명에서 양(amount) 분리 시도 (간단한 공백 기준)
-                name_parts = raw_name.split(' ', 1)
-                name_only = name_parts[0]
-                amount = name_parts[1] if len(name_parts) > 1 else ""
+                # 섹션 제목 찾기 로직 (기존 유지)
+                section_match = re.search(r'[\[●]?([^\[\]●>:]+)[\]>:]', raw_item)
+                if section_match:
+                    current_section = section_match.group(1).strip()
+                    raw_item = re.sub(r'^[\[●]?([^\[\]●>:]+)[\]>:]', '', raw_item).strip()
+                    if not raw_item: continue
+
+                # 🎯 [3단계: 이름과 분량의 완벽한 분리]
+                # '누들 떡볶이 떡(20개, 130g)' -> 이름: '누들 떡볶이 떡', 분량: '(20개, 130g)'
+                # 괄호가 시작되는 지점을 기준으로 나눕니다.
+                if '(' in raw_item:
+                    name_only, amount = raw_item.split('(', 1)
+                    name_only = name_only.strip()
+                    amount = '(' + amount.strip() # 다시 괄호를 씌워줌
+                else:
+                    # 숫자가 시작되는 지점 찾기 (괄호 없는 경우 대비)
+                    match = re.search(r'([^\d]+)\s*(.*)', raw_item)
+                    if match:
+                        name_only = match.group(1).strip()
+                        amount = match.group(2).strip()
+                    else:
+                        name_only = raw_item
+                        amount = ""
                 
+                # 보유 여부 확인 및 추가
                 is_owned = normalizeIngredientName(name_only) in ownedIngredientSet
                 if is_owned: owned_count += 1
                 
                 detail_ingredients.append({
+                    "section": current_section,
                     "name": name_only,
                     "amount": amount,
                     "isOwned": is_owned
@@ -100,3 +130,4 @@ class RecipeDetailService:
             })
         
         return formatted_list
+
