@@ -240,9 +240,9 @@ def edit_fridge_item(ingredient_id):
     current_user = AuthService.getCurrentUser()
     if not current_user:
         return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
-        
+
     data = request.get_json(silent=True) or request.form
-    user_id = current_user.get('id')
+    user_id = current_user.ID
     ingredient_name = (data.get('ingredient_name') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
 

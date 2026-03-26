@@ -85,8 +85,8 @@ def fridge_index():
     if redirect_response:
         return redirect_response
 
-    user_id = current_user['id']
-    
+    user_id = current_user.ID
+
     # 1. 서비스 계층을 통해 데이터 조회
     items = FridgeService.get_user_ingredients(user_id)
     ingredients = [item.to_dict() for item in items]
@@ -108,7 +108,7 @@ def add_ingredient():
     if redirect_response:
         return redirect_response
 
-    user_id = current_user['id']
+    user_id = current_user.ID
     ingredient_name = request.form.get("ingredient_name", "").strip()
     expire_date_str = request.form.get("expire_date", "").strip()
     category = request.form.get("category")
@@ -129,8 +129,8 @@ def delete_ingredient(id):
     if redirect_response:
         return redirect_response
 
-    user_id = current_user['id']
-    
+    user_id = current_user.ID
+
     # 서비스 계층 호출
     ok, message = FridgeService.delete_ingredient(user_id, id)
     
