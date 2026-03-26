@@ -40,10 +40,12 @@ def init_database(app):
     with app.app_context():
         # 테이블을 생성하려면 여기서 모델들을 임포트해야 합니다.
         try:
+            #필요한 다른 모델들도 여기에 추가
+            from app.models.user import User
             from app.models.ingredient import UserIngredient
-            # 필요한 다른 모델들도 여기에 추가 (ex: from app.models.user import User 등)
-        except ImportError:
-            pass
+            from app.models.social import Bookmark, SocialPost
+        except ImportError as e:
+            print(f"모델 import 중 오류: {e}")
             
         db.create_all()
         print("Database settings applied and tables created successfully!")
