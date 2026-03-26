@@ -1380,7 +1380,21 @@
             }
         }
 
-        loadItems();
+        // 메인 유통기한 알람에서 넘어오는 openIngredient 처리: 해당 재료 상세 모달 자동 오픈
+        const urlParams = new URLSearchParams(window.location.search);
+        const openIngredient = (urlParams.get('openIngredient') || '').trim();
+
+        loadItems().then(() => {
+            if (openIngredient) {
+                openGroupModal(openIngredient);
+                // 반복 오픈 방지: 주소에서 openIngredient 제거
+                try {
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.delete('openIngredient');
+                    window.history.replaceState({}, '', newUrl.toString());
+                } catch (e) {}
+            }
+        });
         loadRecommendedRecipes();
     </script>
 {% endblock %}
