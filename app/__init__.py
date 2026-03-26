@@ -67,11 +67,13 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.fridge_views import fridge_views_bp
     from app.routes.fridge import fridge_bp
+    from app.routes.payment_toss import payment_toss_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(fridge_views_bp)
     app.register_blueprint(fridge_bp)
+    app.register_blueprint(payment_toss_bp)
 
     # 화면 우측 상단에 유저 닉네임을 띄우기 위한 컨텍스트 주입
     from app.common import getCurrentUser

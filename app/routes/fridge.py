@@ -152,6 +152,18 @@ def get_current_user():
         pass
     return None if 'userID' not in session else {'id': session['userID']}
 
+@fridge_bp.route('/infer-category', methods=['GET'])
+def infer_ingredient_category():
+    """재료명으로 분류 추정(로그인 불필요). 쿼리: q="""
+    q = (request.args.get('q') or '').strip()
+    if not q:
+        return jsonify({"ok": True, "category": "기타"}), 200
+    ok, err = FridgeService.validate_ingredient_name(q)
+    if not ok:
+        return jsonify({"ok": False, "message": err}), 400
+    cat = FridgeService.infer_category_from_name(q)
+    return jsonify({"ok": True, "category": cat}), 200
+
 @fridge_bp.route('/<int:user_id>', methods=['GET'])
 def get_fridge_items(user_id):
     """특정 사용자의 냉장고 재료 목록 조회"""

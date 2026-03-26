@@ -2,13 +2,14 @@
 {% block title %}현재 냉장고 | 오늘 냉장고{% endblock %}
 
 {% block content %}
+<script src="https://js.tosspayments.com/v2/standard"></script>
 <section class="section">
     <div class="container" style="max-width: 800px; margin: 0 auto;">
         
         <div class="sectionHeader fridgeHeader">
             <div>
                 <h1 class="sectionTitle">현재 냉장고</h1>
-                <p class="sectionDesc">재료명·분류로 검색한 뒤 상품을 고르고, 가상 결제 후 냉장고에 담을 수 있습니다.</p>
+                <p class="sectionDesc">재료명·분류로 검색한 뒤 상품을 고르고, <strong>토스 결제창</strong>에서 결제하면 냉장고에 담깁니다. (로그인 없이 결제 가능 · 비로그인 시 저장 계정은 서버 설정 참고)</p>
             </div>
         </div>
 
@@ -17,24 +18,32 @@
                 <form id="addForm" class="fridgeAddForm">
                     <div class="formField">
                         <label class="formLabel" for="ingredient_name">재료명 <span class="reqStar" aria-hidden="true">*</span></label>
-                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required autocomplete="off">
+                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required autocomplete="off" maxlength="40">
                     </div>
                     <div class="formField">
-                        <label class="formLabel" for="category">분류 <span class="reqStar" aria-hidden="true">*</span></label>
-                        <select id="category" class="input" required>
-                            <option value="">분류 선택</option>
-                            <option value="채소">채소</option>
-                            <option value="과일">과일</option>
-                            <option value="육류">육류</option>
-                            <option value="수산물">수산물</option>
-                            <option value="유제품">유제품</option>
-                            <option value="가공식품">가공식품</option>
-                            <option value="기타">기타</option>
-                        </select>
+                        <label class="formLabel" for="btn_auto_category">분류 <span class="reqStar" aria-hidden="true">*</span></label>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" id="btn_auto_category" class="btn btnSecondary fridgeAddButton" style="min-width: 96px;">자동 분류</button>
+                            <button type="button" id="btn_manual_category" class="btn btnSecondary fridgeAddButton" style="min-width: 96px;">직접 선택</button>
+                            <span id="category_display" style="font-size: 14px; font-weight: 600; color: var(--colorTextSub);">—</span>
+                        </div>
+                        <div id="category_manual_wrap" style="display: none; margin-top: 8px; max-width: 100%;">
+                            <select id="category_manual" class="input" aria-label="분류 직접 선택">
+                                <option value="">분류 선택</option>
+                                <option value="채소">채소</option>
+                                <option value="과일">과일</option>
+                                <option value="육류">육류</option>
+                                <option value="수산물">수산물</option>
+                                <option value="유제품">유제품</option>
+                                <option value="가공식품">가공식품</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="category" name="category" value="">
                     </div>
                     <div class="formField">
-                        <label class="formLabel" for="expire_month">유통기한 <span style="font-weight:400; color:var(--colorTextSub); font-size:12px;">(선택, 연·월)</span></label>
-                        <input type="month" id="expire_month" class="input" title="비워두면 유통기한 일자는 임의로 배정됩니다">
+                        <label class="formLabel" for="expire_month">유통기한 <span style="font-weight:400; color:var(--colorTextSub); font-size:12px;">(선택, 연·월 · 분류 후 분류에 맞는 달만 선택)</span></label>
+                        <input type="month" id="expire_month" class="input" title="분류를 정한 뒤, 그 분류에 맞는 달만 선택할 수 있습니다." disabled>
                     </div>
                     <div class="formField fridgeAddButtonWrap">
                         <button type="submit" class="btn btnPrimary fridgeAddButton">검색</button>
@@ -120,7 +129,7 @@
                 <input type="hidden" id="edit_id">
                 <div class="formGroup">
                     <label class="formLabel">재료명</label>
-                    <input type="text" id="edit_name" class="input" required>
+                    <input type="text" id="edit_name" class="input" required maxlength="40">
                 </div>
                 <div class="formGroup">
                     <label class="formLabel">분류</label>
@@ -155,7 +164,7 @@
                 <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--colorText);">검색 결과</h2>
                 <button type="button" class="btn btnGhost" style="padding: 6px 12px;" onclick="closeSearchResultModal()" aria-label="닫기">&times;</button>
             </div>
-            <p id="searchResultHint" style="margin: 0 0 12px 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.5;"></p>
+            <p id="searchResultHint" style="display: none; margin: 0 0 12px 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.5;"></p>
             <div id="searchResultList"></div>
         </div>
         <div style="padding: 16px; border-top: 1px solid var(--colorBorder); display: flex; gap: 10px; flex-shrink: 0; background: #fafbfc;">
@@ -172,10 +181,10 @@
             <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText); line-height: 1.6;">
                 총 구매액은 <span id="paymentTotalAmount" style="color: var(--colorPrimary);">0</span>원입니다.
             </p>
-            <p style="margin: 0; font-size: 15px; color: var(--colorTextSub);">결제하시겠습니까?</p>
+            <p style="margin: 0; font-size: 15px; color: var(--colorTextSub);">토스 결제창으로 이동합니다. 테스트 키는 실제 결제되지 않습니다.</p>
             <div style="display: flex; gap: 10px; margin-top: 24px;">
                 <button type="button" class="btn btnGhost" style="flex: 1;" onclick="closePaymentConfirmModal()">아니오</button>
-                <button type="button" class="btn btnPrimary" style="flex: 1;" onclick="completeVirtualPaymentAndAdd()">예</button>
+                <button type="button" class="btn btnPrimary" style="flex: 1;" onclick="startTossPaymentFromFridge()">결제하기</button>
             </div>
         </div>
     </div>
@@ -313,6 +322,8 @@
 </style>
 
     <script>
+        let addFormCategoryConfirmed = false;
+
         function showToast(message, type="success") {
             let wrap = document.querySelector('.flashWrap');
             if (!wrap) {
@@ -341,8 +352,207 @@
             el.setAttribute("min", ym);
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
+        /**
+         * 분류별 데모용 최대 유통기한(오늘 기준 며칠 뒤까지) — 날짜 풀·월 입력 max·가격 곡선에서 공통 사용.
+         */
+        function categoryShelfMaxDays(category) {
+            const c = String(category || "기타").trim();
+            const map = {
+                수산물: 5,
+                육류: 7,
+                채소: 21,
+                과일: 35,
+                유제품: 28,
+                가공식품: 120,
+                기타: 60,
+            };
+            return map[c] != null ? map[c] : map["기타"];
+        }
+
+        /** 오늘 + 분류별 최대일이 속한 연·월 (type=month 의 max) */
+        function maxMonthStringForCategory(category) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const end = new Date(today);
+            end.setDate(end.getDate() + categoryShelfMaxDays(category));
+            const y = end.getFullYear();
+            const m = String(end.getMonth() + 1).padStart(2, "0");
+            return `${y}-${m}`;
+        }
+
+        /** 분류 확정 전에는 월 비활성화, 확정 후 min~max 로 브라우저 달력에서 막음 */
+        function syncExpireMonthConstraints() {
+            const el = document.getElementById("expire_month");
+            if (!el) return;
             setExpireMonthMin();
+            const minV = el.getAttribute("min") || "";
+            const cat = ((document.getElementById("category") || {}).value || "").trim();
+            const ready = !!(cat && addFormCategoryConfirmed);
+            if (!ready) {
+                el.disabled = true;
+                el.removeAttribute("max");
+                el.title = "먼저 자동 분류 또는 직접 선택으로 분류를 정한 뒤, 현실적인 범위의 달만 고를 수 있습니다.";
+                el.value = "";
+                return;
+            }
+            el.disabled = false;
+            const maxV = maxMonthStringForCategory(cat);
+            el.setAttribute("max", maxV);
+            el.title = `이 분류는 대략 ${maxV}까지의 달에서만 유통기한을 고를 수 있습니다.`;
+            if (el.value && maxV && el.value > maxV) el.value = "";
+            if (el.value && minV && el.value < minV) el.value = "";
+        }
+
+        /** 서버 `FridgeService.validate_ingredient_name`와 동일 규칙 (형식 + 의미) */
+        const INGREDIENT_NAME_RE = /^[\uAC00-\uD7A3a-zA-Z0-9·\s.,()]+$/;
+        const INGREDIENT_LETTER_RE = /[\uAC00-\uD7A3a-zA-Z]/;
+        const INGREDIENT_DIGITS_ONLY_RE = /^[\d\s]+$/;
+
+        const NONFOOD_FRAGMENTS = [
+            "텔레비전", "스마트폰", "컴퓨터", "자동차", "오토바이", "세탁기", "냉장고",
+            "쇼파", "소파", "침대", "책상", "의자", "책장", "옷장", "화장실", "거실",
+            "노트북", "핸드폰", "태블릿", "에어컨", "티비", "자전거", "비행기", "기차",
+            "지하철", "버스", "택시", "아파트", "건물", "학교", "회사",
+        ];
+        const FOOD_SUBSTRINGS = (() => {
+            const groups = [
+                ["전복", "고등어", "연어", "참치", "생선", "오징어", "문어", "낙지", "홍합", "멸치", "다시마", "미역", "새우", "조개", "굴", "김"],
+                ["소고기", "돼지고기", "닭고기", "삼겹", "목살", "안심", "소시지", "베이컨", "곱창", "양고기", "햄", "닭", "돼지"],
+                ["요거트", "요구르트", "치즈", "버터", "우유", "크림"],
+                ["파스타", "스파게티", "고추장", "된장", "통조림", "식용유", "라면", "과자", "빵", "간장", "설탕", "소금", "김치", "두부"],
+                ["브로콜리", "콩나물", "애호박", "청경채", "깻잎", "시금치", "상추", "배추", "토마토", "피망", "쪽파", "대파", "신파", "실파", "부추", "미나리", "열무", "당근", "양파", "마늘", "감자", "고구마", "오이", "버섯", "무우", "숙주", "파"],
+                ["바나나", "복숭아", "오렌지", "딸기", "수박", "참외", "망고", "키위", "포도", "사과", "배", "귤"],
+            ];
+            const extra = [
+                "계란", "달걀", "쌀", "밀가루", "찹쌀", "현미", "들기름", "참기름",
+                "식초", "물엿", "올리고당", "꿀", "잼", "떡", "당면", "국수", "소면", "중면",
+                "미숫가루", "녹두", "팥", "완두", "옥수수", "들깨", "깨",
+                "carrot", "onion", "garlic", "egg", "milk", "beef", "pork", "chicken",
+            ];
+            return [...new Set(groups.flat().concat(extra))];
+        })();
+
+        function validateIngredientNameClient(raw) {
+            const name = String(raw == null ? "" : raw).trim();
+            if (!name.length) {
+                return { ok: false, msg: "재료명을 입력해주세요." };
+            }
+            if (name.length > 40) {
+                return { ok: false, msg: "재료명은 40글자 이내로 입력해주세요." };
+            }
+            if (!INGREDIENT_NAME_RE.test(name)) {
+                return { ok: false, msg: "재료명은 한글·영문·숫자와 일부 기호( · , . ( ) )만 사용할 수 있습니다." };
+            }
+            if (INGREDIENT_DIGITS_ONLY_RE.test(name)) {
+                return { ok: false, msg: "숫자만으로는 재료명으로 등록할 수 없습니다." };
+            }
+            if (!INGREDIENT_LETTER_RE.test(name)) {
+                return { ok: false, msg: "재료명에 글자(한글 또는 영문)를 포함해주세요." };
+            }
+            const compact = name.replace(/\s+/g, "");
+            const nonfoodSorted = [...NONFOOD_FRAGMENTS].sort((a, b) => b.length - a.length);
+            for (let i = 0; i < nonfoodSorted.length; i++) {
+                if (compact.includes(nonfoodSorted[i])) {
+                    return { ok: false, msg: "올바른 재료명을 입력하세요" };
+                }
+            }
+            const nl = name.toLowerCase();
+            const foodSorted = [...FOOD_SUBSTRINGS].sort((a, b) => b.length - a.length);
+            for (let i = 0; i < foodSorted.length; i++) {
+                if (nl.includes(foodSorted[i].toLowerCase())) {
+                    return { ok: true, msg: "" };
+                }
+            }
+            return { ok: false, msg: "올바른 재료명을 입력하세요" };
+        }
+
+        function setAddFormCategory(value) {
+            const catInput = document.getElementById("category");
+            const disp = document.getElementById("category_display");
+            const manual = document.getElementById("category_manual");
+            const manualWrap = document.getElementById("category_manual_wrap");
+            const v = (value || "").trim();
+            if (catInput) catInput.value = v;
+            if (disp) disp.textContent = v ? v : "—";
+            if (manual) manual.value = v || "";
+            if (!v) {
+                addFormCategoryConfirmed = false;
+                if (manualWrap) manualWrap.style.display = "none";
+                syncExpireMonthConstraints();
+            }
+        }
+
+        async function tryInferCategoryFromServer(opts) {
+            const quiet = opts && opts.quiet;
+            const nameEl = document.getElementById("ingredient_name");
+            if (!nameEl) return false;
+            const q = nameEl.value.trim();
+            const v = validateIngredientNameClient(q);
+            if (!v.ok) {
+                if (!quiet) showToast(v.msg, "error");
+                addFormCategoryConfirmed = false;
+                syncExpireMonthConstraints();
+                return false;
+            }
+            try {
+                const res = await fetch("/api/fridge/infer-category?" + new URLSearchParams({ q }));
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.ok === false) {
+                    addFormCategoryConfirmed = false;
+                    if (!quiet) showToast(data.message || "분류를 불러오지 못했습니다.", "error");
+                    syncExpireMonthConstraints();
+                    return false;
+                }
+                if (data.category) {
+                    setAddFormCategory(data.category);
+                    addFormCategoryConfirmed = true;
+                    syncExpireMonthConstraints();
+                    return true;
+                }
+            } catch (err) {
+                addFormCategoryConfirmed = false;
+                if (!quiet) showToast("분류를 불러오지 못했습니다.", "error");
+                syncExpireMonthConstraints();
+            }
+            return false;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            syncExpireMonthConstraints();
+            const btnAuto = document.getElementById("btn_auto_category");
+            const btnManual = document.getElementById("btn_manual_category");
+            const manualSel = document.getElementById("category_manual");
+            const manualWrap = document.getElementById("category_manual_wrap");
+            const nameIn = document.getElementById("ingredient_name");
+            if (nameIn) {
+                nameIn.addEventListener("input", () => {
+                    setAddFormCategory("");
+                });
+            }
+            if (btnAuto) {
+                btnAuto.addEventListener("click", async () => {
+                    const ok = await tryInferCategoryFromServer();
+                    if (ok) showToast("분류가 적용되었습니다.");
+                });
+            }
+            if (btnManual && manualWrap) {
+                btnManual.addEventListener("click", () => {
+                    const open = manualWrap.style.display === "none" || !manualWrap.style.display;
+                    manualWrap.style.display = open ? "block" : "none";
+                });
+            }
+            if (manualSel) {
+                manualSel.addEventListener("change", () => {
+                    const v = (manualSel.value || "").trim();
+                    if (v) {
+                        setAddFormCategory(v);
+                        addFormCategoryConfirmed = true;
+                        syncExpireMonthConstraints();
+                    } else {
+                        setAddFormCategory("");
+                    }
+                });
+            }
         });
 
         const USER_ID = {{ session.get('userID', 1) }};
@@ -373,52 +583,152 @@
             return x;
         }
 
-        /** 오늘(포함) 이후 임의 일자 (최대 약 1년) */
-        function randomExpiryFromToday() {
-            const today = startOfDay(new Date());
-            const maxAhead = 365;
-            const addDays = Math.floor(Math.random() * (maxAhead + 1));
-            const out = new Date(today);
-            out.setDate(out.getDate() + addDays);
-            return formatYMD(out);
+        /** from~to(포함) 모든 날짜를 YYYY-MM-DD 배열로 */
+        function datesInInclusiveRange(fromD, toD) {
+            const out = [];
+            const c = startOfDay(new Date(fromD));
+            const end = startOfDay(new Date(toD));
+            while (c <= end) {
+                out.push(formatYMD(new Date(c)));
+                c.setDate(c.getDate() + 1);
+            }
+            return out;
         }
 
-        /** 연-월(YYYY-MM)이 주어지면 그 달 안에서 임의 일자. 오늘 이전이면 오늘~말일 구간에서 선택, 달 전체가 과거면 오늘 기준 랜덤 */
-        function randomExpiryForYearMonth(ymStr) {
-            if (!ymStr || ymStr.length < 7) return randomExpiryFromToday();
+        /** 검색 조건 문자열 → 결정적 시드 (같은 입력이면 같은 목록) */
+        function searchResultSeed(baseName, category, ymStr) {
+            const s = String(baseName || "") + "\0" + String(category || "") + "\0" + String(ymStr || "");
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            return h >>> 0;
+        }
+
+        function mulberry32(seed) {
+            let a = seed >>> 0;
+            return function () {
+                a |= 0;
+                a = (a + 0x6d2b79f5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function shuffleInPlaceSeeded(arr, rng) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        /** 오늘 ~ 오늘+(분류별 최대일) 날짜 풀 */
+        function expiryDatePoolFromTodayRange(category) {
+            const today = startOfDay(new Date());
+            const end = new Date(today);
+            end.setDate(end.getDate() + categoryShelfMaxDays(category));
+            return datesInInclusiveRange(today, end);
+        }
+
+        /**
+         * 선택 연·월과 분류 현실 범위의 교집합. 교집합이 비면(예: 6개월 뒤 달만 골랐을 때) 분류 범위만 사용.
+         */
+        function expiryDatePoolForYearMonth(ymStr, category) {
+            const catPool = expiryDatePoolFromTodayRange(category);
+            const catSet = new Set(catPool);
+            if (!ymStr || ymStr.length < 7) return catPool;
+
             const parts = ymStr.split("-");
             const y = parseInt(parts[0], 10);
             const mo = parseInt(parts[1], 10);
-            if (!y || !mo || mo < 1 || mo > 12) return randomExpiryFromToday();
+            if (!y || !mo || mo < 1 || mo > 12) return catPool;
 
             const today = startOfDay(new Date());
             const startOfMonth = new Date(y, mo - 1, 1);
             const endOfMonth = new Date(y, mo, 0);
             let from = startOfMonth > today ? startOfMonth : today;
             let to = endOfMonth;
-            if (from > to) return randomExpiryFromToday();
+            if (from > to) return catPool;
 
-            const span = Math.round((to - from) / 86400000) + 1;
-            const add = Math.floor(Math.random() * span);
-            const out = new Date(from);
-            out.setDate(out.getDate() + add);
-            return formatYMD(out);
+            const monthDates = datesInInclusiveRange(from, to);
+            const intersected = monthDates.filter((d) => catSet.has(d));
+            return intersected.length ? intersected : catPool;
+        }
+
+        /**
+         * 검색 결과 행마다 유통기한이 겹치지 않도록, 풀에서 비복원 추출.
+         * seed로 Fisher–Yates 섞기 → 같은 검색 조건이면 같은 날짜 조합(당일 기준).
+         * 반환 전 날짜 오름차순 정렬로 목록 순서도 고정.
+         */
+        function pickUniqueExpiryDates(ymStr, count, seed, category) {
+            let pool = ymStr && ymStr.length >= 7
+                ? expiryDatePoolForYearMonth(ymStr, category)
+                : expiryDatePoolFromTodayRange(category);
+            if (!pool.length) {
+                return [formatYMD(startOfDay(new Date()))];
+            }
+            const copy = pool.slice();
+            const rng = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+            shuffleInPlaceSeeded(copy, rng);
+            const take = Math.min(count, copy.length);
+            const picked = copy.slice(0, take);
+            picked.sort((a, b) => String(a).localeCompare(String(b)));
+            return picked;
+        }
+
+        /**
+         * 재료명당 고정 느낌의 기본가(원): 문자열 해시 → 1,200~9,999원 구간.
+         * 같은 재료명이면 검색할 때마다 동일한 기본가가 나오도록 함(데모 일관성).
+         */
+        function ingredientBasePrice(name) {
+            const s = String(name || "").trim();
+            if (!s) return 3500;
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            return 1200 + (h % 8800);
+        }
+
+        /**
+         * 기본가 × (남은 보관일 보정). 임박할수록(남은 일수↓) 약간 저렴: 최대 약 22% 낮음 → 가까울수록 할인.
+         */
+        function priceFromBaseAndExpireDate(basePrice, expireDateStr, category) {
+            const today = startOfDay(new Date());
+            const exp = new Date(String(expireDateStr) + "T12:00:00");
+            if (isNaN(exp.getTime())) return Math.max(500, Math.round(basePrice / 10) * 10);
+            const exp0 = startOfDay(exp);
+            const daysLeft = Math.max(0, Math.round((exp0 - today) / 86400000));
+            const refDays = Math.max(14, categoryShelfMaxDays(category));
+            const t = Math.min(1, daysLeft / refDays);
+            const mult = 0.78 + 0.22 * t;
+            let p = Math.round(basePrice * mult);
+            p = Math.max(500, Math.round(p / 10) * 10);
+            return p;
         }
 
         function buildMockSearchRows(baseName, category, ymStr) {
-            const n = 4 + Math.floor(Math.random() * 3);
-            const unitPrice = 1000 + Math.floor(Math.random() * 8000);
+            const seed = searchResultSeed(baseName, category, ymStr || "");
+            const nDesired = 4 + (seed % 3);
+            const uniqueDates = pickUniqueExpiryDates(ymStr, nDesired, seed, category);
+            const base = ingredientBasePrice(baseName);
             const rows = [];
-            for (let i = 0; i < n; i++) {
-                const expire_date = ymStr ? randomExpiryForYearMonth(ymStr) : randomExpiryFromToday();
+            for (let i = 0; i < uniqueDates.length; i++) {
+                const expire_date = uniqueDates[i];
+                const price = priceFromBaseAndExpireDate(base, expire_date, category);
                 rows.push({
-                    id: `sr-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
-                    price: unitPrice,
+                    id: `sr-${seed}-${i}-${expire_date.replace(/-/g, "")}`,
+                    price,
                     expire_date,
                     category,
                     ingredient_name: baseName,
                 });
             }
+            rows.sort((a, b) => a.expire_date.localeCompare(b.expire_date));
             return rows;
         }
 
@@ -434,23 +744,20 @@
             document.getElementById("paymentConfirmModal").style.display = "none";
         }
 
-        function renderSearchResults(rows, hintText, productName) {
+        function renderSearchResults(rows, productName) {
             const list = document.getElementById("searchResultList");
             const hint = document.getElementById("searchResultHint");
-            hint.textContent = hintText || "";
-            lastSearchResults = rows;
+            hint.textContent = "";
+            hint.style.display = "none";
+            const sorted = rows.slice().sort((a, b) => a.expire_date.localeCompare(b.expire_date));
+            lastSearchResults = sorted;
             const name = (productName || "").trim() || "식재료";
-            const unitPrice = rows.length ? rows[0].price : 0;
             const titleBlock = `
                 <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
                     <div style="font-weight: 800; font-size: 18px; color: var(--colorText);">${escapeHtml(name)}</div>
-                    <div style="font-size: 13px; color: var(--colorTextSub); margin-top: 6px;">
-                        예시 단가 <strong style="color: var(--colorPrimary);">${unitPrice.toLocaleString()}원</strong>
-                        <span style="color: var(--colorTextSub); font-weight: 400;"> · 행마다 다른 점은 유통기한입니다.</span>
-                    </div>
                 </div>
             `;
-            const rowBlocks = rows
+            const rowBlocks = sorted
                 .map(
                     (r, idx) => `
                 <div class="searchResultRow" data-row-idx="${idx}">
@@ -459,6 +766,8 @@
                         <div style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;">
                             <div style="font-size: 14px; color: var(--colorText);">
                                 유통기한 <strong style="font-size: 15px;">${r.expire_date}</strong>
+                                <span style="color: var(--colorTextSub); margin: 0 6px;">·</span>
+                                <strong style="color: var(--colorPrimary); font-size: 15px;">${r.price.toLocaleString()}원</strong>
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 12px; color: var(--colorTextSub);">수량</span>
@@ -508,39 +817,49 @@
             document.getElementById("paymentConfirmModal").style.display = "flex";
         }
 
-        async function completeVirtualPaymentAndAdd() {
+        async function startTossPaymentFromFridge() {
+            const lines = pendingFridgeAdds.slice();
+            const total = pendingPaymentTotal;
             closePaymentConfirmModal();
-            const adds = pendingFridgeAdds.slice();
-            let fail = 0;
-            for (const row of adds) {
-                try {
-                    const res = await fetch("/api/fridge/add", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            user_id: USER_ID,
-                            ingredient_name: row.ingredient_name,
-                            expire_date: row.expire_date,
-                            category: row.category,
-                        }),
-                    });
-                    if (!res.ok) fail += 1;
-                } catch (e) {
-                    fail += 1;
+            if (!lines.length) {
+                showToast("주문 항목이 없습니다.", "error");
+                return;
+            }
+            try {
+                const res = await fetch("/payment/toss/prepare", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lines, total }),
+                    credentials: "same-origin",
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    showToast(data.message || "결제 준비에 실패했습니다.", "error");
+                    return;
                 }
+                if (typeof TossPayments === "undefined") {
+                    showToast("토스 결제 스크립트를 불러오지 못했습니다.", "error");
+                    return;
+                }
+                const tossPayments = TossPayments(data.clientKey);
+                const payment = tossPayments.payment({ customerKey: data.customerKey });
+                await payment.requestPayment({
+                    method: "CARD",
+                    amount: { currency: "KRW", value: data.amount },
+                    orderId: data.orderId,
+                    orderName: data.orderName,
+                    successUrl: data.successUrl,
+                    failUrl: data.failUrl,
+                    card: { useEscrow: false, flowMode: "DEFAULT" },
+                });
+            } catch (e) {
+                if (e && e.code === "USER_CANCEL") {
+                    showToast("결제를 취소했습니다.", "error");
+                    return;
+                }
+                console.error(e);
+                showToast("결제창을 열 수 없습니다.", "error");
             }
-            if (fail > 0) {
-                showToast(`결제는 완료 처리되었으나 저장에 실패한 항목이 ${fail}건 있습니다.`, "error");
-            } else {
-                showToast("결제가 완료되어 냉장고에 담았습니다.");
-            }
-            closeSearchResultModal();
-            pendingFridgeAdds = [];
-            pendingPaymentTotal = 0;
-            document.getElementById("addForm").reset();
-            setExpireMonthMin();
-            await loadItems();
-            loadRecommendedRecipes();
         }
 
         async function loadItems() {
@@ -625,7 +944,7 @@
                         badgeStyle = 'background-color: #e74c3c; color: white;';
                     }
 
-                    const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=200&h=200&auto=format&fit=crop';
+                    const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=200&h=200&auto=format&fit=crop';
 
                     const categoryLabels = [...new Set(
                         group.instances.map(inst => {
@@ -636,6 +955,15 @@
                     const categoryDisplay = categoryLabels.length === 1
                         ? categoryLabels[0]
                         : categoryLabels.join(' · ');
+
+                    const singleExpire =
+                        group.quantity === 1
+                            ? (group.instances[0]?.expire_date || group.expire_date || "").trim()
+                            : "";
+                    const singleExpiryHtml =
+                        singleExpire !== ""
+                            ? `<div style="font-size: 13px; color: var(--colorTextSub); margin-bottom: 6px; font-weight: 600;">~${singleExpire}까지</div>`
+                            : "";
                     
                     const li = document.createElement('li');
                     li.style = "background: white; border: 1px solid var(--colorBorder); border-radius: var(--radiusLg); padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative;";
@@ -651,6 +979,7 @@
                         </div>
                         <div style="font-size: 17px; font-weight: 800; color: var(--colorText); margin-bottom: 4px;">${group.ingredient_name}</div>
                         <div style="font-size: 13px; font-weight: 600; color: var(--colorPrimary); margin-bottom: 8px; letter-spacing: -0.02em;">${categoryDisplay}</div>
+                        ${singleExpiryHtml}
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
                             ${imminentCount > 0 ? `<span class="badge-dday" style="${badgeStyle}; font-size: 11px; padding: 4px 10px;">${badgeText}</span>` : `<span style="font-size: 13px; color: #2ecc71; font-weight: 600;">${badgeText}</span>`}
                         </div>
@@ -666,7 +995,7 @@
             const group = globalFridgeGroups[ingredientName];
             if (!group) return;
 
-            const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=200&h=200&auto=format&fit=crop';
+            const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=200&h=200&auto=format&fit=crop';
             document.getElementById('modalTitle').innerText = `${ingredientName} 상세정보`;
 
             const contentDiv = document.getElementById('modalContent');
@@ -697,8 +1026,7 @@
                             </div>
                             <div style="font-size: 13px; color: var(--colorTextSub);">등록일: ${createdDate} | ${inst.category || '기타'}</div>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <button class="btn btnSecondary" style="padding: 6px 12px; font-size: 12px; height: auto;" onclick="openEditForm(${inst.id})">수정</button>
+                        <div style="display: flex; align-items: center;">
                             <button class="btn btnGhost" style="padding: 6px 12px; font-size: 12px; height: auto; color: #e74c3c; background: #fff5f5;" onclick="deleteItem(${inst.id})">삭제</button>
                         </div>
                     </div>
@@ -763,8 +1091,14 @@
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit_id').value;
+            const editName = document.getElementById('edit_name').value;
+            const nameCheck = validateIngredientNameClient(editName);
+            if (!nameCheck.ok) {
+                showToast(nameCheck.msg, 'error');
+                return;
+            }
             const payload = {
-                ingredient_name: document.getElementById('edit_name').value,
+                ingredient_name: editName,
                 expire_date: document.getElementById('edit_expire').value,
                 category: document.getElementById('edit_category').value
             };
@@ -802,17 +1136,19 @@
                 showToast('재료명을 입력해주세요.', 'error');
                 return;
             }
-            if (!category) {
-                showToast('분류를 선택해주세요.', 'error');
+            const nameCheck = validateIngredientNameClient(baseName);
+            if (!nameCheck.ok) {
+                showToast(nameCheck.msg, 'error');
+                return;
+            }
+            if (!addFormCategoryConfirmed || !category) {
+                showToast('자동 분류 또는 직접 선택으로 분류를 정한 뒤 검색해 주세요.', 'error');
                 return;
             }
 
             currentSearchContext = { baseName, category, ym };
             const rows = buildMockSearchRows(baseName, category, ym);
-            const hint = ym
-                ? `선택하신 ${ym.slice(0, 4)}년 ${ym.slice(5, 7)}월 안에서 유통기한 «일»이 임의로 배정된 예시 상품입니다. 수량을 늘려 같은 품목을 여러 번 담을 수 있습니다.`
-                : '유통기한을 지정하지 않아, 오늘 이후 날짜로 임의 배정된 예시 상품입니다. 원하는 품목을 복수 선택할 수 있습니다.';
-            renderSearchResults(rows, hint, baseName);
+            renderSearchResults(rows, baseName);
             openSearchResultModal();
         });
 
