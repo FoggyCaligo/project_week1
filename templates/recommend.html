@@ -15,6 +15,7 @@
     <section class="card section">
       <div class="cardBody">
         <form action="{{ url_for('main.recommendPage') }}" method="get" class="formRow">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="formGroup">
             <label for="sort" class="formLabel">정렬</label>
             <select name="sort" id="sort" class="select">
@@ -78,6 +79,7 @@
           <div class="recipeActions">
             <a href="{{ url_for('recipe.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
             <form action="{{ url_for('addBookmark', recipeID=recipe.recipeID) }}" method="post" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btnSecondary">북마크</button>
             </form>
           </div>
