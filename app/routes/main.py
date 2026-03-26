@@ -8,22 +8,43 @@ from app.common import (
      getRecipeByID, getNextID, getNow, bookmarks, socialPosts, buildRecipeCard, formatDateTime, buildRecipeDetail, recipeCatalog
 )
 from app.services.authService import AuthService
+from app.services.apiService import ApiService
 main_bp = Blueprint('main', __name__)
 
+# @main_bp.route("/")
+# def home():
+#     currentUser = AuthService.getCurrentUser()
+#     if currentUser:
+#         summary = buildHomeSummary(currentUser.ID)
+#         todayRecipes = buildRecommendedRecipeList(currentUser.ID)[:3]
+#         expiringIngredients = getUserIngredientList(currentUser.ID)[:5]
+#     else:
+#         summary = {"ingredientCount": 0, "expiringCount": 0, "recommendCount": 0}
+#         todayRecipes = buildRecommendedRecipeList(None, sortKey="cookTime")[:3]
+#         expiringIngredients = []
+
+#     return render_template("home.html", summary=summary, todayRecipes=todayRecipes, expiringIngredients=expiringIngredients)
 @main_bp.route("/")
 def home():
     currentUser = AuthService.getCurrentUser()
+    
+    # 비회원이든 회원이든 일단 우리 DB에서 신선한 랜덤 레시피 3개!
+    todayRecipes = ApiService.getRandomRecommendations(3)
+    
+    # 요약 정보 (나중에 DB 쿼리로 대체 가능)
+    summary = {"ingredientCount": 0, "expiringCount": 0, "recommendCount": 0}
+    expiringIngredients = []
+
+    # 로그인한 경우 추가 정보 세팅 (냉장고 데이터 등)
     if currentUser:
-        summary = buildHomeSummary(currentUser.ID)
-        todayRecipes = buildRecommendedRecipeList(currentUser.ID)[:3]
-        expiringIngredients = getUserIngredientList(currentUser.ID)[:5]
-    else:
-        summary = {"ingredientCount": 0, "expiringCount": 0, "recommendCount": 0}
-        todayRecipes = buildRecommendedRecipeList(None, sortKey="cookTime")[:3]
-        expiringIngredients = []
+        # 여기에 나중에 유저 요약 정보를 가져오는 로직을 넣으시면 됩니다.
+        pass
 
-    return render_template("home.html", summary=summary, todayRecipes=todayRecipes, expiringIngredients=expiringIngredients)
-
+    return render_template("home.html", 
+                           summary=summary, 
+                           todayRecipes=todayRecipes, 
+                           expiringIngredients=expiringIngredients,
+                           currentUser=currentUser)
 @main_bp.route("/search")
 def searchPage():
     currentUser = AuthService.getCurrentUser()
@@ -43,7 +64,7 @@ def recommendPage():
 @main_bp.route("/recipes/<recipeID>")
 def recipeDetailPage(recipeID: str):
     currentUser = AuthService.getCurrentUser()
-    userID = currentUser["id"] if currentUser else None
+    userID = currentUser["ID"] if currentUser else None
     recipe = buildRecipeDetail(recipeID, userID)
     if recipe is None:
         flash("레시피를 찾지 못했습니다.", "error")

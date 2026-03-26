@@ -109,9 +109,10 @@
     <div class="grid3">
       {% for recipe in todayRecipes %}
       <article class="card recipeCard">
-        <div class="recipeThumb"><img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}"></div>
+        <div class="recipeThumb"><img src="{{ recipe.ATT_FILE_NO_MAIN }}" alt="{{ recipe.RCP_NM }}"></div>
         <div class="recipeInfo">
-          <h3 class="recipeTitle">{{ recipe.recipeName }}</h3>
+          <h3 class="recipeTitle">{{ recipe.RCP_NM }}</h3>
+          <h5 class="recipePat">{{recipe.RCP_PAT2}}</h5>
           <div class="recipeMeta">
             {% if currentUser %}
             <span class="tag tagSuccess">일치율 {{ recipe.matchPercent }}%</span>
@@ -120,7 +121,7 @@
             {% endif %}
           </div>
           <div class="recipeActions">
-            <a href="{{ url_for('main.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
+            <a href="{{ url_for('main.recipeDetailPage', recipeID=recipe.rRCP_SEQ) }}" class="btn btnPrimary">상세 보기</a>
           </div>
         </div>
       </article>
