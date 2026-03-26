@@ -9,57 +9,66 @@ from app.common import (
 )
 from app.services.authService import AuthService
 from app.services.apiService import ApiService
+
 main_bp = Blueprint('main', __name__)
 
-# @main_bp.route("/")
-# def home():
-#     currentUser = AuthService.getCurrentUser()
-#     if currentUser:
-#         summary = buildHomeSummary(currentUser.ID)
-#         todayRecipes = buildRecommendedRecipeList(currentUser.ID)[:3]
-#         expiringIngredients = getUserIngredientList(currentUser.ID)[:5]
-#     else:
-#         summary = {"ingredientCount": 0, "expiringCount": 0, "recommendCount": 0}
-#         todayRecipes = buildRecommendedRecipeList(None, sortKey="cookTime")[:3]
-#         expiringIngredients = []
-
-#     return render_template("home.html", summary=summary, todayRecipes=todayRecipes, expiringIngredients=expiringIngredients)
 @main_bp.route("/")
 def home():
     currentUser = AuthService.getCurrentUser()
-    
-    # 비회원이든 회원이든 일단 우리 DB에서 신선한 랜덤 레시피 3개!
     todayRecipes = ApiService.getRandomRecommendations(3)
     
-    # 요약 정보 (나중에 DB 쿼리로 대체 가능)
     summary = {"ingredientCount": 0, "expiringCount": 0, "recommendCount": 0}
     expiringIngredients = []
 
-    # 로그인한 경우 추가 정보 세팅 (냉장고 데이터 등)
     if currentUser:
-        # 여기에 나중에 유저 요약 정보를 가져오는 로직을 넣으시면 됩니다.
         pass
-
     return render_template("home.html", 
                            summary=summary, 
                            todayRecipes=todayRecipes, 
                            expiringIngredients=expiringIngredients,
                            currentUser=currentUser)
+# [비회원 전용] 검색 -> 전체 레시피 페이지로 안내
 @main_bp.route("/search")
 def searchPage():
-    currentUser = AuthService.getCurrentUser()
-    searchKeyword = request.args.get("q", "").strip()
-    userID = currentUser["id"] if currentUser else None
-    recipes = buildRecommendedRecipeList(userID=userID, sortKey="matchPercent", searchKeyword=searchKeyword)
-    return render_template("recommend.html", recipes=recipes)
+    raw_query = request.args.get("q", "").strip()
+    page = request.args.get('page', 1, type=int) # 페이지 번호도 받아야 함
+    
+    if not raw_query:
+        return redirect(url_for('main.allRecipesPage'))
 
+    recipes, pagination = ApiService.searchRecipesFromDB(raw_query, page=page)
+
+    # is_search 플래그를 넘겨서 검색 결과임을 표시합니다.
+    return render_template("recipe.html", 
+                           recipes=recipes, 
+                           pagination=pagination, # 페이징 객체도 넘겨줘야 함
+                           keyword=raw_query,
+                           is_search=True)
+# [회원 전용] 검색/접속 -> 추천 레시피 페이지(recommend.html)로 안내
 @main_bp.route("/recipes/recommend")
 def recommendPage():
-    currentUser = AuthService.getCurrentUser()
-    sortKey = request.args.get("sort", "matchPercent")
-    userID = currentUser["id"] if currentUser else None
-    recipes = buildRecommendedRecipeList(userID=userID, sortKey=sortKey)
-    return render_template("recommend.html", recipes=recipes)
+    currentUser, redirectResponse = AuthService.requireLogin()
+    if redirectResponse: return redirectResponse
+
+    raw_query = request.args.get("q", "").strip()
+    
+    recipes = ApiService.getRandomRecommendations(12) 
+
+    return render_template("recommend.html", 
+                           recipes=recipes, 
+                           keyword=raw_query)
+@main_bp.route("/recipes")
+def allRecipesPage():
+    # 1. 입력값만 받아서
+    page = request.args.get('page', 1, type=int)
+    
+    # 2. 서비스에 맡기고 결과만 받음
+    recipes, pagination = ApiService.getAllRecipesWithPagination(page=page)
+    
+    # 3. 서빙(렌더링)
+    return render_template("recipe.html", 
+                           recipes=recipes, 
+                           pagination=pagination)
 
 @main_bp.route("/recipes/<recipeID>")
 def recipeDetailPage(recipeID: str):
