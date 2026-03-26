@@ -4,17 +4,15 @@ from uuid import uuid4
 from pathlib import Path
 
 from app.common import (
-    getCurrentUser,
     requireLogin,
     getNextID,
     getNow,
     socialPosts,
     bookmarks,
-    findUserByID,
     getRecipeByID,
     formatDateTime,
 )
-
+from app.services.authService import AuthService
 social_bp = Blueprint("social", __name__)
 
 def isAllowedImageFile(fileName: str) -> bool:
@@ -22,7 +20,7 @@ def isAllowedImageFile(fileName: str) -> bool:
     return "." in fileName and fileName.rsplit(".", 1)[1].lower() in allowedExtensions
 @social_bp.route("/social")
 def socialPage():
-    currentUser = getCurrentUser()
+    currentUser = AuthService.getCurrentUser()
 
     availableRecipes = []
 
@@ -45,7 +43,7 @@ def socialPage():
 
     socialPostViewList = []
     for postData in sorted(socialPosts, key=lambda item: item["createdAt"], reverse=True):
-        writerData = findUserByID(postData["userID"])
+        writerData = AuthService.findUserByID(postData["userID"])
         recipeData = getRecipeByID(postData["recipeID"])
 
         socialPostViewList.append(

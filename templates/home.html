@@ -4,153 +4,141 @@
 {% block content %}
 <section class="section">
   <div class="container hero">
+    
+    {# --- [분기 1] 상단 히어로 섹션 --- #}
+    {% if currentUser %}
     <div class="card heroPanel">
-      <span class="heroEyebrow">냉장고 재고 기반 레시피 추천</span>
-      <h1 class="heroTitle">남은 재료로<br>오늘 먹을 메뉴를 바로 찾으세요</h1>
-      <p class="heroText">
-        보유 재료와 유통기한을 기준으로 지금 만들 수 있는 요리를 추천합니다.
-      </p>
-
-      <form action="{{ url_for('searchPage') }}" method="get" class="searchBar">
-        <input
-          type="text"
-          name="q"
-          class="input"
-          placeholder="예: 계란, 두부, 양파"
-          value="{{ request.args.get('q', '') }}"
-        />
-        <button type="submit" class="btn btnPrimary">검색</button>
-      </form>
-
+      <span class="heroEyebrow">{{ currentUser.nickName }}님의 냉장고 상황</span>
+      <h1 class="heroTitle">오늘도 신선하게!<br>남은 재료를 확인해보세요.</h1>
+      <p class="heroText">현재 냉장고 데이터를 바탕으로 최적의 레시피를 매칭 중입니다.</p>
       <div class="heroActions">
-        <a href="{{ url_for('fridge_views.fridge_index') }}" class="btn btnPrimary">내 냉장고 보러가기</a>
-        <a href="{{ url_for('recommendPage') }}" class="btn btnSecondary">추천 레시피 보기</a>
+        <a href="{{ url_for('fridge_views.fridge_index') }}" class="btn btnPrimary">내 냉장고 관리</a>
+        <a href="{{ url_for('main.recommendPage') }}" class="btn btnSecondary">맞춤 추천 보기</a>
       </div>
     </div>
-
+    {% else %}
     <div class="card heroPanel">
-      <div class="sectionHeader">
-        <div>
-          <h2 class="sectionTitle">오늘의 요약</h2>
-          <p class="sectionDesc">냉장고 현황을 빠르게 확인하세요.</p>
+      <span class="heroEyebrow">재료 낭비 없는 똑똑한 주방</span>
+      <h1 class="heroTitle">남은 재료로<br>오늘 먹을 메뉴를 바로 찾으세요</h1>
+      <p class="heroText">보유 재료와 유통기한을 기준으로 지금 만들 수 있는 요리를 추천합니다.</p>
+      <div class="heroActions">
+        <a href="{{ url_for('auth.signupPage') }}" class="btn btnPrimary">지금 무료로 시작하기</a>
+        <a href="{{ url_for('auth.loginPage') }}" class="btn btnGhost">로그인하고 관리하기</a>
+      </div>
+    </div>
+    {% endif %}
+
+    {# --- [공통] 검색창 섹션 --- #}
+<div class="card heroPanel" style="justify-content: center; background: var(--color-surface-variant);">
+  <h2 class="sectionTitle" style="margin-bottom: 12px;">레시피 빠른 검색</h2>
+  
+  {# --- [변경] 로그인 여부에 따라 action 주소를 다르게 설정합니다 --- #}
+  <form 
+    action="{{ url_for('main.recommendPage') if currentUser else url_for('main.searchPage') }}" 
+    method="get" 
+    class="searchBar" 
+    style="width: 100%;"
+  >
+    <input
+      type="text"
+      name="q"
+      class="input"
+      placeholder="{% if currentUser %}냉장고와 매칭해드려요{% else %}예: 계란, 두부, 양파 {% endif %}"
+      value="{{ request.args.get('q', '') }}"
+    />
+    <button type="submit" class="btn btnPrimary">검색</button>
+  </form>
+  
+  <p class="sectionDesc" style="margin-top: 12px;">
+    {% if currentUser %}
+      {{ currentUser.nickName }}님의 냉장고 재료와 입력하신 재료를 합쳐서 최적의 레시피를 찾습니다.
+    {% else %}
+      로그인하시면 보유하신 재료와 딱 맞는 레시피를 추천받을 수 있어요!
+    {% endif %}
+  </p>
+</div>
+</section>
+
+{# --- [분기 2] 오늘의 요약 / 서비스 특징 --- #}
+<section class="section" style="padding-top: 0;">
+  <div class="container grid2">
+    {% if currentUser %}
+    <div class="card">
+      <div class="cardBody">
+        <h2 class="sectionTitle">오늘의 요약</h2>
+        <div class="metricGrid" style="margin-top: 20px;">
+          <div class="card metricCard">
+            <div class="metricLabel">보유 재료</div>
+            <div class="metricValue">{{ summary.ingredientCount or 0 }}</div>
+          </div>
+          <div class="card metricCard">
+            <div class="metricLabel">임박 재료</div>
+            <div class="metricValue" style="color: var(--color-error);">{{ summary.expiringCount or 0 }}</div>
+          </div>
         </div>
       </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="cardBody">
+        <h2 class="sectionTitle">오늘 냉장고의 장점</h2>
+        <ul class="list" style="margin-top: 15px;">
+          <li class="listItem"><strong>중복 구매 방지</strong>: 있는 재료 또 사는 일을 줄여줍니다.</li>
+          <li class="listItem"><strong>유통기한 관리</strong>: 버려지는 식재료를 최소화합니다.</li>
+        </ul>
+      </div>
+    </div>
+    {% endif %}
 
-      <div class="metricGrid">
-        <div class="card metricCard">
-          <div class="metricLabel">보유 재료 수</div>
-          <div class="metricValue">{{ summary.ingredientCount or 0 }}</div>
-        </div>
-        <div class="card metricCard">
-          <div class="metricLabel">임박 재료 수</div>
-          <div class="metricValue">{{ summary.expiringCount or 0 }}</div>
-        </div>
-        <div class="card metricCard">
-          <div class="metricLabel">추천 가능 메뉴</div>
-          <div class="metricValue">{{ summary.recommendCount or 0 }}</div>
+    <div class="card">
+      <div class="cardBody">
+        <h2 class="sectionTitle">유통기한 알람</h2>
+        <div class="list" style="margin-top: 15px;">
+          {% if currentUser %}
+            {% for ingredient in expiringIngredients %}
+            <div class="listItem">
+              <span><strong>{{ ingredient.ingredientName }}</strong></span>
+              <span class="tag tagWarning">{{ ingredient.daysLeft }}일 남음</span>
+            </div>
+            {% else %}
+            <p class="emptyState">임박한 재료가 없습니다. 신선하네요!</p>
+            {% endfor %}
+          {% else %}
+            <p class="emptyState">로그인하시면 유통기한 임박 재료를<br>가장 먼저 알려드립니다.</p>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
 </section>
 
+{# --- [공통] 추천 레시피 섹션 --- #}
 <section class="section">
   <div class="container">
     <div class="sectionHeader">
-      <div>
-        <h2 class="sectionTitle">오늘의 추천 요리</h2>
-        <p class="sectionDesc">지금 냉장고 상황에 맞는 메뉴입니다.</p>
-      </div>
-      <a href="{{ url_for('recommendPage') }}" class="btn btnGhost">전체 보기</a>
+      <h2 class="sectionTitle">{% if currentUser %}맞춤 추천 요리{% else %}인기 레시피{% endif %}</h2>
+      <a href="{{ url_for('main.recommendPage') }}" class="btn btnGhost">전체 보기</a>
     </div>
-
     <div class="grid3">
       {% for recipe in todayRecipes %}
       <article class="card recipeCard">
-        <div class="recipeThumb">
-          <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}">
-        </div>
+        <div class="recipeThumb"><img src="{{ recipe.ATT_FILE_NO_MAIN }}" alt="{{ recipe.RCP_NM }}"></div>
         <div class="recipeInfo">
-          <h3 class="recipeTitle">{{ recipe.recipeName }}</h3>
-
+          <h3 class="recipeTitle">{{ recipe.RCP_NM }}</h3>
+          <h5 class="recipePat">{{recipe.RCP_PAT2}}</h5>
           <div class="recipeMeta">
+            {% if currentUser %}
             <span class="tag tagSuccess">일치율 {{ recipe.matchPercent }}%</span>
-            <span class="tag">부족 재료 {{ recipe.missingIngredients|length }}개</span>
+            {% else %}
+            <span class="tag">약 {{ recipe.cookTime }}분 소요</span>
+            {% endif %}
           </div>
-
-          <div class="progressBar">
-            <div class="progressValue" style="width: {{ recipe.matchPercent }}%;"></div>
-          </div>
-
           <div class="recipeActions">
-            <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
+            <a href="{{ url_for('main.recipeDetailPage', recipeID=recipe.rRCP_SEQ) }}" class="btn btnPrimary">상세 보기</a>
           </div>
         </div>
       </article>
-      {% else %}
-      <div class="card emptyState">추천 레시피가 아직 없습니다.</div>
       {% endfor %}
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="container grid2">
-    <div class="card">
-      <div class="cardBody">
-        <div class="sectionHeader">
-          <div>
-            <h2 class="sectionTitle">유통기한 임박 재료</h2>
-            <p class="sectionDesc">먼저 소비해야 할 재료입니다.</p>
-          </div>
-        </div>
-
-        <div class="list">
-          {% for ingredient in expiringIngredients %}
-          <div class="listItem">
-            <div class="listItemMain">
-              <strong>{{ ingredient.ingredientName }}</strong>
-              <span class="listItemSub">유통기한: {{ ingredient.expireDate }}</span>
-            </div>
-            <span class="tag tagWarning">{{ ingredient.daysLeft }}일 남음</span>
-          </div>
-          {% else %}
-          <div class="emptyState">임박 재료가 없습니다.</div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="cardBody">
-        <div class="sectionHeader">
-          <div>
-            <h2 class="sectionTitle">서비스 특징</h2>
-            <p class="sectionDesc">오늘 냉장고가 돕는 것</p>
-          </div>
-        </div>
-
-        <div class="list">
-          <div class="listItem">
-            <div class="listItemMain">
-              <strong>중복 구매 방지</strong>
-              <span class="listItemSub">이미 있는 재료를 다시 사는 일을 줄입니다.</span>
-            </div>
-          </div>
-          <div class="listItem">
-            <div class="listItemMain">
-              <strong>빠른 식사 결정</strong>
-              <span class="listItemSub">지금 만들 수 있는 메뉴를 바로 확인할 수 있습니다.</span>
-            </div>
-          </div>
-          <div class="listItem">
-            <div class="listItemMain">
-              <strong>남은 재료 활용</strong>
-              <span class="listItemSub">유통기한 임박 재료부터 우선 소비하도록 돕습니다.</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </section>

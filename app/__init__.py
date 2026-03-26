@@ -33,11 +33,11 @@ def create_app():
     app.register_blueprint(social_bp)
     app.register_blueprint(recipe_bp)
 
-    # 공통 currentUser 주입
-    from app.common import getCurrentUser
+    # 화면 우측 상단에 유저 닉네임을 띄우기 위한 컨텍스트 주입
+    from app.services.authService import AuthService
     @app.context_processor
     def injectCommonData():
-        return {"currentUser": getCurrentUser()}
+        return {"currentUser": AuthService.getCurrentUser()}
 
     # 기존 템플릿 url_for 호환 어댑터
     @app.context_processor
