@@ -16,6 +16,7 @@
         <div class="card" style="margin-bottom: 32px;">
             <div class="cardBody">
                 <form id="addForm" class="fridgeAddForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="formField">
                         <label class="formLabel" for="ingredient_name">재료명 <span class="reqStar" aria-hidden="true">*</span></label>
                         <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required autocomplete="off" maxlength="40">
@@ -126,6 +127,7 @@
             </div>
 
             <form id="editForm" style="display: none;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" id="edit_id">
                 <div class="formGroup">
                     <label class="formLabel">재료명</label>

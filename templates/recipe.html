@@ -15,6 +15,7 @@
     <section class="card section" style="margin-bottom: 2rem;">
       <div class="cardBody">
         <form action="{{ url_for('main.allRecipesPage') }}" method="get" class="formRow">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="formGroup">
             <label for="sort" class="formLabel">정렬</label>
             <select name="sort" id="sort" class="select">
