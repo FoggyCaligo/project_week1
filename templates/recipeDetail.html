@@ -54,7 +54,14 @@
         </div>
 
         <div class="list">
+          {% set last_section = [None] %}
           {% for ingredient in recipe.ingredients %}
+          {% if ingredient.section and ingredient.section != last_section[0] %}
+          <div class="listSectionHeader" style="margin: 20px 0 10px 0; padding-bottom: 5px; border-bottom: 2px solid var(--color-primary-container); color: var(--color-primary); font-weight: bold;">
+            {{ ingredient.section }}
+          </div>
+          {% if last_section.append(ingredient.section) or last_section.pop(0) %}{% endif %}
+        {% endif %}
           <div class="listItem">
             <div class="listItemMain">
               <strong>{{ ingredient.name }}</strong>
