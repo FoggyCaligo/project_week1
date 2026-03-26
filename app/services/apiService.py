@@ -132,10 +132,16 @@ class ApiService:
         """
         try:
             # 1. rcpPartsDtls(재료상세) 컬럼에 키워드가 포함된 것 찾기
-            search_term = f"%{keyword}%"
-            pagination = Recipe.query.filter(
-                Recipe.rcpPartsDtls.like(search_term)
-            ).order_by(Recipe.rcpSeq.desc()).paginate(
+            keywords = [k.strip() for k in keyword.replace(',', ' ').split() if k.strip()]
+        
+            query = Recipe.query
+            
+            # 2. 모든 키워드가 포함된 레시피만 필터링 (AND 조건)
+            for k in keywords:
+                search_term = f"%{k}%"
+                query = query.filter(Recipe.rcpPartsDtls.like(search_term))
+                
+            pagination = query.order_by(Recipe.rcpSeq.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
 
