@@ -28,22 +28,35 @@
     </div>
     {% endif %}
 
-    {# --- [공통] 검색창 (누구나 사용 가능) --- #}
-    <div class="card heroPanel" style="justify-content: center; background: var(--color-surface-variant);">
-      <h2 class="sectionTitle" style="margin-bottom: 12px;">레시피 빠른 검색</h2>
-      <form action="{{ url_for('main.searchPage') }}" method="get" class="searchBar" style="width: 100%;">
-        <input
-          type="text"
-          name="q"
-          class="input"
-          placeholder="예: 계란, 두부, 양파 (쉼표로 구분)"
-          value="{{ request.args.get('q', '') }}"
-        />
-        <button type="submit" class="btn btnPrimary">검색</button>
-      </form>
-      <p class="sectionDesc" style="margin-top: 12px;">가지고 계신 재료를 입력하면 지금 가능한 요리를 알려드려요.</p>
-    </div>
-  </div>
+    {# --- [공통] 검색창 섹션 --- #}
+<div class="card heroPanel" style="justify-content: center; background: var(--color-surface-variant);">
+  <h2 class="sectionTitle" style="margin-bottom: 12px;">레시피 빠른 검색</h2>
+  
+  {# --- [변경] 로그인 여부에 따라 action 주소를 다르게 설정합니다 --- #}
+  <form 
+    action="{{ url_for('main.recommendPage') if currentUser else url_for('main.searchPage') }}" 
+    method="get" 
+    class="searchBar" 
+    style="width: 100%;"
+  >
+    <input
+      type="text"
+      name="q"
+      class="input"
+      placeholder="{% if currentUser %}냉장고와 매칭해드려요{% else %}예: 계란, 두부, 양파 {% endif %}"
+      value="{{ request.args.get('q', '') }}"
+    />
+    <button type="submit" class="btn btnPrimary">검색</button>
+  </form>
+  
+  <p class="sectionDesc" style="margin-top: 12px;">
+    {% if currentUser %}
+      {{ currentUser.nickName }}님의 냉장고 재료와 입력하신 재료를 합쳐서 최적의 레시피를 찾습니다.
+    {% else %}
+      로그인하시면 보유하신 재료와 딱 맞는 레시피를 추천받을 수 있어요!
+    {% endif %}
+  </p>
+</div>
 </section>
 
 {# --- [분기 2] 오늘의 요약 / 서비스 특징 --- #}
