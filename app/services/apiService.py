@@ -103,7 +103,7 @@ class ApiService:
             print(f"[API Search Error]: {e}")
             return [], 1
     @staticmethod
-    def getAllRecipesWithPagination(page=1, per_page=10, sort='latest'):
+    def getAllRecipesWithPagination(page=1, per_page=12, sort='latest'):
         """
         [비회원/전체용] DB에서 전체 레시피를 페이징하여 가져옵니다.
         """
@@ -142,7 +142,7 @@ class ApiService:
             print(f"[DB Error] 전체 레시피 로드 실패: {e}")
             return [], None
     @staticmethod
-    def searchRecipesFromDB(keyword, page=1, per_page=10, sort='lastest'):
+    def searchRecipesFromDB(keyword, page=1, per_page=12, sort='lastest'):
         """
         [비회원/전체용] 우리 DB에서 재료명으로 레시피를 검색합니다.
         """
