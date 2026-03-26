@@ -20,3 +20,10 @@
 
 4. `app/services/fridge_service.py`
    - 식재료 추가(`add_ingredient`), 수정(`edit_ingredient`), 삭제(`delete_ingredient`) 시 `SQLAlchemy` ORM 객체의 외래키 바인딩 에러를 방지하기 위해 `원시 SQL(Raw SQL)`을 사용하도록 로직을 변경하여 500 에러 및 400 에러를 수정했습니다.
+   - 추가·수정 시 `category`를 허용 목록(채소·과일·육류·수산물·유제품·가공식품·기타)으로 검증 후 DB에 저장합니다. 수정 요청에 `category` 필드가 없으면 기존 값을 유지합니다.
+
+8. 분류(category) 저장·표시 버그 수정 (`app/models/ingredient.py`, `app/routes/fridge.py`, `app/routes/fridge_views.py`, `templates/fridge.html`)
+   - 프론트에서 선택한 분류가 API 요청 본문에 포함되지 않아 항상 `기타`로 보이던 문제: `POST /api/fridge/add`·`PUT /api/fridge/edit`에 `category`를 전달하고, `userIngredients.category` 컬럼에 저장하며, `to_dict()`의 `category`로 내려줍니다.
+   - **공용 DB(`userIngredients`)에 `category` 컬럼이 없으면** 아래를 한 번 실행해야 합니다.  
+     `ALTER TABLE userIngredients ADD COLUMN category VARCHAR(32) NULL COMMENT '분류' AFTER expireDate;`
+   - 냉장고 메인 그리드 카드(동일 재료 그룹)에도 분류명을 한 줄로 표시하며, 그룹 내 분류가 여러 개면 `채소 · 과일`처럼 구분해 표시합니다.

@@ -374,6 +374,16 @@
                     }
 
                     const imageUrl = group.image_url || 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=200&h=200&auto=format&fit=crop';
+
+                    const categoryLabels = [...new Set(
+                        group.instances.map(inst => {
+                            const c = (inst.category || '기타').trim();
+                            return c || '기타';
+                        })
+                    )];
+                    const categoryDisplay = categoryLabels.length === 1
+                        ? categoryLabels[0]
+                        : categoryLabels.join(' · ');
                     
                     const li = document.createElement('li');
                     li.style = "background: white; border: 1px solid var(--colorBorder); border-radius: var(--radiusLg); padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative;";
@@ -387,7 +397,8 @@
                         <div style="width: 76px; height: 76px; border-radius: 50%; overflow: hidden; background-color: #f1f3f5; margin: 0 auto 16px auto; box-shadow: var(--shadowSoft); border: 3px solid white;">
                             <img src="${imageUrl}" alt="${group.ingredient_name}" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                        <div style="font-size: 17px; font-weight: 800; color: var(--colorText); margin-bottom: 8px;">${group.ingredient_name}</div>
+                        <div style="font-size: 17px; font-weight: 800; color: var(--colorText); margin-bottom: 4px;">${group.ingredient_name}</div>
+                        <div style="font-size: 13px; font-weight: 600; color: var(--colorPrimary); margin-bottom: 8px; letter-spacing: -0.02em;">${categoryDisplay}</div>
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
                             ${imminentCount > 0 ? `<span class="badge-dday" style="${badgeStyle}; font-size: 11px; padding: 4px 10px;">${badgeText}</span>` : `<span style="font-size: 13px; color: #2ecc71; font-weight: 600;">${badgeText}</span>`}
                         </div>
@@ -466,6 +477,13 @@
             document.getElementById('edit_id').value = item.id;
             document.getElementById('edit_name').value = item.ingredient_name;
             document.getElementById('edit_expire').value = item.expire_date;
+            const cat = item.category || '기타';
+            const editCat = document.getElementById('edit_category');
+            if ([...editCat.options].some(o => o.value === cat)) {
+                editCat.value = cat;
+            } else {
+                editCat.value = '기타';
+            }
 
             document.getElementById('modalContent').style.display = 'none';
             document.getElementById('editForm').style.display = 'block';
@@ -495,7 +513,8 @@
             const id = document.getElementById('edit_id').value;
             const payload = {
                 ingredient_name: document.getElementById('edit_name').value,
-                expire_date: document.getElementById('edit_expire').value
+                expire_date: document.getElementById('edit_expire').value,
+                category: document.getElementById('edit_category').value
             };
 
             try {
@@ -526,7 +545,8 @@
             const payload = {
                 user_id: USER_ID,
                 ingredient_name: document.getElementById('ingredient_name').value,
-                expire_date: document.getElementById('expire_date').value
+                expire_date: document.getElementById('expire_date').value,
+                category: document.getElementById('category').value
             };
 
             try {

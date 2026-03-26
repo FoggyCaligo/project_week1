@@ -233,8 +233,12 @@ def edit_fridge_item(ingredient_id):
     ingredient_name = (data.get('ingredient_name') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
 
-    # category 인자 제거
-    ok, result = FridgeService.edit_ingredient(user_id, ingredient_id, ingredient_name, expire_date_str)
+    edit_kwargs = {}
+    if "category" in data:
+        edit_kwargs["category"] = data.get("category")
+    ok, result = FridgeService.edit_ingredient(
+        user_id, ingredient_id, ingredient_name, expire_date_str, **edit_kwargs
+    )
     
     if ok:
         return jsonify({"ok": True, "message": "수정 성공", "item": result.to_dict()}), 200
@@ -253,9 +257,9 @@ def add_fridge_item():
     user_id = current_user.get('id')
     ingredient_name = (data.get('ingredient_name') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
+    category = data.get("category")
 
-    # category 인자 제거
-    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str)
+    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str, category)
     
     if ok:
         return jsonify({"ok": True, "message": "추가 성공", "item": result.to_dict()}), 201

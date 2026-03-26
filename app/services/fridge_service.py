@@ -144,7 +144,20 @@ from datetime import datetime
 from app.models.ingredient import UserIngredient
 from database import db
 
+ALLOWED_INGREDIENT_CATEGORIES = frozenset({
+    "채소", "과일", "육류", "수산물", "유제품", "가공식품", "기타",
+})
+
+_CATEGORY_OMITTED = object()
+
 class FridgeService:
+    @staticmethod
+    def _normalize_category(raw):
+        if raw is None:
+            return "기타"
+        s = str(raw).strip()
+        return s if s in ALLOWED_INGREDIENT_CATEGORIES else "기타"
+
     @staticmethod
     def get_user_ingredients(user_id):
         """특정 사용자의 냉장고 재료 목록을 유통기한 임박 순으로 조회합니다."""
@@ -152,7 +165,7 @@ class FridgeService:
         return UserIngredient.query.filter_by(userID=user_id).order_by(UserIngredient.expireDate.asc()).all()
 
     @staticmethod
-    def add_ingredient(user_id, ingredient_name, expire_date_str):
+    def add_ingredient(user_id, ingredient_name, expire_date_str, category=None):
         """냉장고에 새로운 재료를 추가합니다."""
         if not ingredient_name or not expire_date_str:
             return False, "재료명과 유통기한을 모두 입력해주세요."
@@ -163,6 +176,7 @@ class FridgeService:
             return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
 
         normalized_name = ingredient_name.lower().replace(" ", "")
+        cat = FridgeService._normalize_category(category)
             
         # 팀원의 인메모리 인증으로 인해 DB users 테이블에 사용자가 없을 경우 외래키 에러 방지용 임시 생성 (db.py의 ensureUser 로직)
         from sqlalchemy import text
@@ -179,8 +193,11 @@ class FridgeService:
         try:
             from sqlalchemy import text
             db.session.execute(
-                text("INSERT INTO userIngredients (userID, ingredientName, normalizedName, expireDate) VALUES (:uid, :name, :norm, :exp)"),
-                {"uid": user_id, "name": ingredient_name, "norm": normalized_name, "exp": expire_date}
+                text(
+                    "INSERT INTO userIngredients (userID, ingredientName, normalizedName, expireDate, category) "
+                    "VALUES (:uid, :name, :norm, :exp, :cat)"
+                ),
+                {"uid": user_id, "name": ingredient_name, "norm": normalized_name, "exp": expire_date, "cat": cat},
             )
             db.session.commit()
             
@@ -192,7 +209,7 @@ class FridgeService:
             return False, f"데이터베이스 저장 오류: {str(e)}"
 
     @staticmethod
-    def edit_ingredient(user_id, ingredient_id, ingredient_name, expire_date_str):
+    def edit_ingredient(user_id, ingredient_id, ingredient_name, expire_date_str, category=_CATEGORY_OMITTED):
         """냉장고 재료 정보를 수정합니다."""
         # id -> ID, user_id -> userID
         item = UserIngredient.query.filter_by(ID=ingredient_id, userID=user_id).first()
@@ -207,12 +224,27 @@ class FridgeService:
         except ValueError:
             return False, "유통기한은 YYYY-MM-DD 형식이어야 합니다."
 
+        if category is _CATEGORY_OMITTED:
+            cat = FridgeService._normalize_category(item.category)
+        else:
+            cat = FridgeService._normalize_category(category)
+
         # 모델 속성 업데이트 (카멜 케이스)
         try:
             from sqlalchemy import text
             db.session.execute(
-                text("UPDATE userIngredients SET ingredientName = :name, normalizedName = :norm, expireDate = :exp WHERE ID = :id AND userID = :uid"),
-                {"name": ingredient_name, "norm": ingredient_name.lower().replace(" ", ""), "exp": expire_date, "id": ingredient_id, "uid": user_id}
+                text(
+                    "UPDATE userIngredients SET ingredientName = :name, normalizedName = :norm, expireDate = :exp, category = :cat "
+                    "WHERE ID = :id AND userID = :uid"
+                ),
+                {
+                    "name": ingredient_name,
+                    "norm": ingredient_name.lower().replace(" ", ""),
+                    "exp": expire_date,
+                    "cat": cat,
+                    "id": ingredient_id,
+                    "uid": user_id,
+                },
             )
             db.session.commit()
             

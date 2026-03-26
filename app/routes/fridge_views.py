@@ -123,9 +123,9 @@ def add_ingredient():
     user_id = current_user['id'] # 버그 수정됨
     ingredient_name = request.form.get("ingredient_name", "").strip()
     expire_date_str = request.form.get("expire_date", "").strip()
+    category = request.form.get("category")
 
-    # category 인자 제거
-    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str)
+    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str, category)
     
     if ok:
         flash("식재료가 추가되었습니다.", "success")
