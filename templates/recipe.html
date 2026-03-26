@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}전체 레시피 | 오늘 냉장고{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="sectionHeader">
+      <div>
+        <h1 class="sectionTitle">전체 레시피</h1>
+        <p class="sectionDesc">오늘 냉장고의 모든 레시피를 둘러보세요.</p>
+      </div>
+    </div>
+
+    {# --- [변경] 정렬 옵션도 비회원용으로 간소화 --- #}
+    <section class="card section" style="margin-bottom: 2rem;">
+      <div class="cardBody">
+        <form action="{{ url_for('main.allRecipesPage') }}" method="get" class="formRow">
+          <div class="formGroup">
+            <label for="sort" class="formLabel">정렬</label>
+            <select name="sort" id="sort" class="select">
+              <option value="latest">최신순</option>
+              <option value="name">이름순</option>
+              <option value="cookTime">조리 시간 짧은 순</option>
+            </select>
+          </div>
+          <div class="formGroup" style="align-self:end;">
+            <button type="submit" class="btn btnPrimary">적용</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <div class="grid3">
+      {% for recipe in recipes %}
+      <article class="card recipeCard">
+        <div class="recipeThumb">
+          {# 사진이 늦게 뜰 때를 대비한 onerror 처리! #}
+          <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}" onerror="this.src='/static/images/default_recipe.jpg';">
+        </div>
+
+        <div class="recipeInfo">
+          {# --- [변경] 일치율 대신 카테고리와 조리방식 --- #}
+          <div style="margin-bottom: 8px;">
+            <span class="tag tagInfo">{{ recipe.category }}</span>
+            <span class="tag">약 {{ recipe.cookTime }}분</span>
+          </div>
+          
+          <h2 class="recipeTitle">{{ recipe.recipeName }}</h2>
+
+          {# --- [변경] 주요 재료 요약 섹션 --- #}
+          <div class="formGroup" style="margin-top: 15px;">
+            <span class="formLabel">대표 재료</span>
+            <p class="sectionDesc" style="font-size: 0.85rem; color: var(--color-on-surface-variant);">
+              {{ recipe.parts_dtls | truncate(50) }} {# 재료가 너무 길면 잘라줍니다 #}
+            </p>
+          </div>
+
+          {# --- [추가] 로그인 유도 배너 (작게) --- #}
+          <p style="font-size: 0.8rem; color: var(--color-primary); margin-top: 12px;">
+            ✨ 로그인하면 '내 재료 일치율'을 확인할 수 있어요!
+          </p>
+
+          <div class="recipeActions" style="margin-top: 20px;">
+            <a href="{{ url_for('main.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary" style="width: 100%;">레시피 상세보기</a>
+          </div>
+        </div>
+      </article>
+      {% else %}
+      <div class="card emptyState">등록된 레시피가 없습니다.</div>
+      {% endfor %}
+    </div>
+
+    {# --- 페이지네이션 (선택사항) --- #}
+    {% if pagination %}
+    <div style="display: flex; justify-content: center; margin-top: 40px; gap: 10px;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('main.allRecipesPage', page=pagination.prev_num) }}" class="btn btnGhost">이전</a>
+        {% endif %}
+        <span class="btn" style="cursor: default;">{{ pagination.page }} / {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('main.allRecipesPage', page=pagination.next_num) }}" class="btn btnGhost">다음</a>
+        {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
