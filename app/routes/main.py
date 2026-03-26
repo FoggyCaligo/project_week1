@@ -54,15 +54,3 @@ def recommendPage():
 
     recipes = buildRecommendedRecipeList(userID=userID, sortKey=sortKey)
     return render_template("recommend.html", recipes=recipes)
-
-@main_bp.route("/recipes/<recipeID>")
-def recipeDetailPage(recipeID: str):
-    currentUser = getCurrentUser()
-    userID = currentUser["id"] if currentUser else None
-
-    recipe = buildRecipeDetail(recipeID, userID)
-    if recipe is None:
-        flash("레시피를 찾지 못했습니다.", "error")
-        return redirect(url_for("main.recommendPage"))
-
-    return render_template("recipe_detail.html", recipe=recipe)
