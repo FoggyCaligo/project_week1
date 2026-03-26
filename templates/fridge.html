@@ -285,6 +285,7 @@
 </style>
 
     <script>
+        const CSRF_TOKEN = "{{ csrf_token() }}";
         let addFormCategoryConfirmed = false;
 
         function showToast(message, type="success") {
@@ -633,7 +634,7 @@
             }
         });
 
-        const USER_ID = {{ session.get('userID', 1) }};
+        const USER_ID = Number("{{ session.get('userID', 1) }}") || 1;
         let globalAllItems = [];
         let globalFridgeGroups = {};
 
@@ -1149,7 +1150,7 @@
             try {
                 const res = await fetch(`/api/fridge/edit/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                     body: JSON.stringify(payload)
                 });
                 
@@ -1186,7 +1187,7 @@
             try {
                 const res = await fetch('/api/fridge/resolve-add', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                     body: JSON.stringify({ q: rawName }),
                     credentials: 'same-origin'
                 });
@@ -1290,7 +1291,7 @@
             try {
                 const res = await fetch('/api/fridge/add-batch', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
                     body: JSON.stringify(payload),
                     credentials: 'same-origin'
                 });
@@ -1316,7 +1317,11 @@
         async function deleteItem(id) {
             if (!confirm('해당 식재료를 삭제하시겠습니까?')) return;
             try {
-                const res = await fetch(`/api/fridge/delete/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/fridge/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN },
+                    credentials: 'same-origin',
+                });
                 if (res.ok) {
                     showToast('성공적으로 삭제되었습니다.');
                     const item = globalAllItems.find(i => i.id === id);
