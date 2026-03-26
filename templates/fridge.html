@@ -406,17 +406,14 @@
         }
 
         function buildMockSearchRows(baseName, category, ymStr) {
-            const suffixes = ["특품", "대형", "소포장 300g", "1kg 박스", "국내산", "세척", "이커머스용"];
             const n = 4 + Math.floor(Math.random() * 3);
+            const unitPrice = 1000 + Math.floor(Math.random() * 8000);
             const rows = [];
             for (let i = 0; i < n; i++) {
-                const displayName = `${baseName} · ${suffixes[i % suffixes.length]}`;
-                const price = 900 + Math.floor(Math.random() * 18900);
                 const expire_date = ymStr ? randomExpiryForYearMonth(ymStr) : randomExpiryFromToday();
                 rows.push({
                     id: `sr-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
-                    displayName,
-                    price,
+                    price: unitPrice,
                     expire_date,
                     category,
                     ingredient_name: baseName,
@@ -437,24 +434,33 @@
             document.getElementById("paymentConfirmModal").style.display = "none";
         }
 
-        function renderSearchResults(rows, hintText) {
+        function renderSearchResults(rows, hintText, productName) {
             const list = document.getElementById("searchResultList");
             const hint = document.getElementById("searchResultHint");
             hint.textContent = hintText || "";
             lastSearchResults = rows;
-            list.innerHTML = rows
+            const name = (productName || "").trim() || "식재료";
+            const unitPrice = rows.length ? rows[0].price : 0;
+            const titleBlock = `
+                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
+                    <div style="font-weight: 800; font-size: 18px; color: var(--colorText);">${escapeHtml(name)}</div>
+                    <div style="font-size: 13px; color: var(--colorTextSub); margin-top: 6px;">
+                        예시 단가 <strong style="color: var(--colorPrimary);">${unitPrice.toLocaleString()}원</strong>
+                        <span style="color: var(--colorTextSub); font-weight: 400;"> · 행마다 다른 점은 유통기한입니다.</span>
+                    </div>
+                </div>
+            `;
+            const rowBlocks = rows
                 .map(
                     (r, idx) => `
                 <div class="searchResultRow" data-row-idx="${idx}">
                     <label>
                         <input type="checkbox" class="searchRowChk" data-row-idx="${idx}" style="margin-top: 4px; width: 18px; height: 18px;">
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 800; font-size: 15px; color: var(--colorText);">${escapeHtml(r.displayName)}</div>
-                            <div style="font-size: 13px; color: var(--colorTextSub); margin-top: 6px;">
-                                유통기한 <strong style="color: var(--colorText);">${r.expire_date}</strong>
-                                &nbsp;·&nbsp; <strong style="color: var(--colorPrimary); font-size: 15px;">${r.price.toLocaleString()}원</strong>
+                        <div style="flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;">
+                            <div style="font-size: 14px; color: var(--colorText);">
+                                유통기한 <strong style="font-size: 15px;">${r.expire_date}</strong>
                             </div>
-                            <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 12px; color: var(--colorTextSub);">수량</span>
                                 <input type="number" class="input searchRowQty" data-row-idx="${idx}" min="1" max="99" value="1"
                                     style="width: 64px; padding: 6px 8px; font-size: 14px;" onclick="event.stopPropagation();" onkeydown="event.stopPropagation();">
@@ -465,6 +471,7 @@
             `
                 )
                 .join("");
+            list.innerHTML = titleBlock + rowBlocks;
         }
 
         function collectSelectedPurchases() {
@@ -805,7 +812,7 @@
             const hint = ym
                 ? `선택하신 ${ym.slice(0, 4)}년 ${ym.slice(5, 7)}월 안에서 유통기한 «일»이 임의로 배정된 예시 상품입니다. 수량을 늘려 같은 품목을 여러 번 담을 수 있습니다.`
                 : '유통기한을 지정하지 않아, 오늘 이후 날짜로 임의 배정된 예시 상품입니다. 원하는 품목을 복수 선택할 수 있습니다.';
-            renderSearchResults(rows, hint);
+            renderSearchResults(rows, hint, baseName);
             openSearchResultModal();
         });
 
