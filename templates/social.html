@@ -93,9 +93,9 @@
               </div>
             </div>
 
-            {% if post.imagePath %}
+            {% if post.hasImage %}
               <div style="margin-bottom: 14px; border-radius: 16px; overflow: hidden;">
-                <img src="{{ post.imagePath }}" alt="{{ post.title }}">
+                <img src="{{ url_for('social.socialImage', postID=post.id) }}" alt="{{ post.title }}">
               </div>
             {% endif %}
 
