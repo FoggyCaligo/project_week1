@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.recipeName }} | 오늘 냉장고{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container detailHero">
+    <div class="detailThumb">
+      <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}">
+    </div>
+
+    <div class="card detailSummary">
+      <span class="heroEyebrow">레시피 상세</span>
+      <h1 class="heroTitle" style="font-size: 34px;">{{ recipe.recipeName }}</h1>
+      <p class="heroText">{{ recipe.description }}</p>
+
+      <div class="infoGrid">
+        <div class="infoBox">
+          <div class="infoLabel">조리 시간</div>
+          <div class="infoValue">{{ recipe.cookTime or 15 }}분</div>
+        </div>
+        <div class="infoBox">
+          <div class="infoLabel">칼로리</div>
+          <div class="infoValue">{{ recipe.calories or 0 }} kcal</div>
+        </div>
+        <div class="infoBox">
+          <div class="infoLabel">기준 인분</div>
+          <div class="infoValue">{{ recipe.servingSize or 1 }}인분</div>
+        </div>
+        <div class="infoBox">
+          <div class="infoLabel">일치율</div>
+          <div class="infoValue">{{ recipe.matchPercent or 0 }}%</div>
+        </div>
+      </div>
+
+      <div class="recipeActions" style="margin-top: 20px;">
+        <form action="{{ url_for('addBookmark', recipeID=recipe.recipeID) }}" method="post">
+          <button type="submit" class="btn btnPrimary">북마크 저장</button>
+        </form>
+        <button type="button" id="startTimerBtn" class="btn btnSecondary">타이머 시작</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid2">
+    <section class="card">
+      <div class="cardBody">
+        <div class="sectionHeader">
+          <div>
+            <h2 class="sectionTitle">재료</h2>
+            <p class="sectionDesc">보유 여부와 부족 재료를 함께 확인합니다.</p>
+          </div>
+        </div>
+
+        <div class="list">
+          {% for ingredient in recipe.ingredients %}
+          <div class="listItem">
+            <div class="listItemMain">
+              <strong>{{ ingredient.name }}</strong>
+              <span class="listItemSub">{{ ingredient.amount }}</span>
+            </div>
+
+            {% if ingredient.isOwned %}
+            <span class="tag tagSuccess">보유</span>
+            {% else %}
+            <span class="tag tagWarning">부족</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardBody">
+        <div class="sectionHeader">
+          <div>
+            <h2 class="sectionTitle">영양 정보</h2>
+            <p class="sectionDesc">1인분 기준으로 빠르게 확인합니다.</p>
+          </div>
+        </div>
+
+        <div class="list">
+          <div class="listItem">
+            <div class="listItemMain">
+              <strong>탄수화물</strong>
+              <span class="listItemSub">{{ recipe.nutrition.carbohydrate or "-" }}</span>
+            </div>
+          </div>
+          <div class="listItem">
+            <div class="listItemMain">
+              <strong>단백질</strong>
+              <span class="listItemSub">{{ recipe.nutrition.protein or "-" }}</span>
+            </div>
+          </div>
+          <div class="listItem">
+            <div class="listItemMain">
+              <strong>지방</strong>
+              <span class="listItemSub">{{ recipe.nutrition.fat or "-" }}</span>
+            </div>
+          </div>
+          {% if recipe.nutrition.sodium %}
+          <div class="listItem">
+            <div class="listItemMain">
+              <strong>나트륨</strong>
+              <span class="listItemSub">{{ recipe.nutrition.sodium }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <section class="card">
+      <div class="cardBody">
+        <div class="sectionHeader">
+          <div>
+            <h2 class="sectionTitle">조리 순서</h2>
+            <p class="sectionDesc">단계별 이미지와 설명</p>
+          </div>
+        </div>
+
+        <div class="stepList">
+          {% for step in recipe.steps %}
+          <article class="stepCard">
+            <div>
+              <div class="stepNumber">{{ loop.index }}</div>
+            </div>
+            <div style="display: flex; gap: 20px; width: 100%; align-items: flex-start;">
+              {% if step.imageUrl %}
+              <div style="flex: 1; border-radius: 16px; overflow: hidden;">
+                <img src="{{ step.imageUrl }}" alt="조리 단계 {{ loop.index }}"
+                  style="width: 100%; height: auto; display: block;">
+              </div>
+              <div style="flex: 1;">
+                <p class="sectionDesc" style="margin-top: 8px;">{{ step.description }}</p>
+              </div>
+              {% else %}
+              <div style="flex: 1;">
+                <h3 style="margin-top:0;">{{ step.title }}</h3>
+                <p class="sectionDesc" style="margin-top: 8px;">{{ step.description }}</p>
+              </div>
+              {% endif %}
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- Timer UI -->
+<div id="recipeTimer" style="display: none; position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 280px; text-align: center; border: 1px solid #eee;">
+  <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #333;">조리 타이머</h3>
+  
+  <div id="timerDisplay" style="font-size: 36px; font-weight: bold; margin-bottom: 10px; font-variant-numeric: tabular-nums;">00:00</div>
+  
+  <div style="display: flex; gap: 5px; justify-content: center; margin-bottom: 15px;">
+    <button id="addMinBtn" class="btn btnSecondary" style="padding: 4px 10px; font-size: 13px; min-width: auto;">+1분</button>
+    <button id="subMinBtn" class="btn btnSecondary" style="padding: 4px 10px; font-size: 13px; min-width: auto;">-1분</button>
+    <button id="addSecBtn" class="btn btnSecondary" style="padding: 4px 10px; font-size: 13px; min-width: auto;">+10초</button>
+    <button id="subSecBtn" class="btn btnSecondary" style="padding: 4px 10px; font-size: 13px; min-width: auto;">-10초</button>
+  </div>
+
+  <div style="display: flex; gap: 10px; justify-content: center;">
+    <button id="startTimerBtnInner" class="btn btnPrimary" style="padding: 8px 16px;">시작</button>
+    <button id="pauseResumeBtn" class="btn btnPrimary" style="display: none; padding: 8px 16px; background-color: var(--warning, #f59e0b);">일시정지</button>
+    <button id="stopTimerBtn" class="btn btnGhost" style="padding: 8px 16px;">닫기</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const mainStartBtn = document.getElementById('startTimerBtn');
+    
+    // UI Elements
+    const timerUI = document.getElementById('recipeTimer');
+    const display = document.getElementById('timerDisplay');
+    const startInnerBtn = document.getElementById('startTimerBtnInner');
+    const pauseResumeBtn = document.getElementById('pauseResumeBtn');
+    const stopBtn = document.getElementById('stopTimerBtn');
+    
+    // Adjust Buttons
+    const addMinBtn = document.getElementById('addMinBtn');
+    const subMinBtn = document.getElementById('subMinBtn');
+    const addSecBtn = document.getElementById('addSecBtn');
+    const subSecBtn = document.getElementById('subSecBtn');
+    
+    // Convert recipe cooktime to default seconds
+    const defaultSeconds = parseInt("{{ recipe.cookTime or 15 }}", 10) * 60;
+    let remainingSeconds = defaultSeconds;
+    let timerInterval = null;
+    let isPaused = false;
+    
+    function formatTime(seconds) {
+      if (seconds < 0) seconds = 0;
+      const min = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const sec = (seconds % 60).toString().padStart(2, '0');
+      return min + ':' + sec;
+    }
+    
+    function updateDisplay() {
+      display.textContent = formatTime(remainingSeconds);
+    }
+
+    function adjustTime(amount) {
+      remainingSeconds += amount;
+      if (remainingSeconds < 0) remainingSeconds = 0;
+      updateDisplay();
+    }
+    
+    // Main button just opens the interface
+    mainStartBtn.addEventListener('click', function() {
+      if (!timerInterval && !isPaused) {
+        // Reset to default only if there's no active/paused timer
+        remainingSeconds = defaultSeconds;
+      }
+      timerUI.style.display = 'block';
+      updateDisplay();
+    });
+
+    // Time Adjustment Listeners
+    addMinBtn.addEventListener('click', () => adjustTime(60));
+    subMinBtn.addEventListener('click', () => adjustTime(-60));
+    addSecBtn.addEventListener('click', () => adjustTime(10));
+    subSecBtn.addEventListener('click', () => adjustTime(-10));
+    
+    // Start tracking
+    startInnerBtn.addEventListener('click', function() {
+      if (timerInterval || remainingSeconds <= 0) return;
+      
+      isPaused = false;
+      startInnerBtn.style.display = 'none';
+      pauseResumeBtn.style.display = 'block';
+      pauseResumeBtn.textContent = '일시정지';
+      pauseResumeBtn.style.backgroundColor = 'var(--warning, #f59e0b)';
+      
+      timerInterval = setInterval(function() {
+        if (!isPaused) {
+          remainingSeconds--;
+          updateDisplay();
+          
+          if (remainingSeconds <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            
+            // Native notification and alert
+            if (Notification.permission === 'granted') {
+              new Notification('타이머 종료', { body: '요리를 확인해주세요!' });
+            }
+            alert('타이머가 종료되었습니다! 요리를 확인해주세요.');
+            
+            // Reset UI
+            startInnerBtn.style.display = 'block';
+            pauseResumeBtn.style.display = 'none';
+          }
+        }
+      }, 1000);
+    });
+    
+    // Pause / Resume
+    pauseResumeBtn.addEventListener('click', function() {
+      isPaused = !isPaused;
+      if (isPaused) {
+        pauseResumeBtn.textContent = '계속';
+        pauseResumeBtn.style.backgroundColor = 'var(--primary, #10b981)';
+      } else {
+        pauseResumeBtn.textContent = '일시정지';
+        pauseResumeBtn.style.backgroundColor = 'var(--warning, #f59e0b)';
+      }
+    });
+    
+    // Stop & Close
+    stopBtn.addEventListener('click', function() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      isPaused = false;
+      startInnerBtn.style.display = 'block';
+      pauseResumeBtn.style.display = 'none';
+      timerUI.style.display = 'none';
+    });
+    
+    // Ask for native notification permission on load
+    if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
+  });
+</script>
+
+{% endblock %}

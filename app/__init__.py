@@ -23,6 +23,7 @@ def create_app():
     from app.routes.fridge import fridge_bp
     from app.routes.bookmarks import bookmarks_bp
     from app.routes.social import social_bp
+    from app.routes.recipe import recipe_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -30,10 +31,10 @@ def create_app():
     app.register_blueprint(fridge_bp)
     app.register_blueprint(bookmarks_bp)
     app.register_blueprint(social_bp)
+    app.register_blueprint(recipe_bp)
 
     # 공통 currentUser 주입
     from app.common import getCurrentUser
-
     @app.context_processor
     def injectCommonData():
         return {"currentUser": getCurrentUser()}
@@ -50,7 +51,7 @@ def create_app():
                 "home": "main.home",
                 "searchPage": "main.searchPage",
                 "recommendPage": "main.recommendPage",
-                "recipeDetailPage": "main.recipeDetailPage",
+                "recipeDetailPage": "recipe.recipeDetailPage",
 
                 "addBookmark": "bookmarks.addBookmark",
                 "bookmarksPage": "bookmarks.bookmarksPage",
@@ -59,12 +60,9 @@ def create_app():
                 "socialPage": "social.socialPage",
                 "createSocialPost": "social.createSocialPost",
             }
-
             if endpoint in mapping:
                 endpoint = mapping[endpoint]
-
             return flask_url_for(endpoint, **values)
-
         return dict(url_for=custom_url_for)
 
     return app
