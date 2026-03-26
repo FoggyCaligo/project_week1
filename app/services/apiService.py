@@ -61,11 +61,12 @@ class ApiService:
             return [], 0
 
         start = (page - 1) * 10 + 1
-        end = page * 10
+        end = start + 10 - 1
         
         # API 요청 URL 조립 (RCP_PARTS_DTLS 파라미터에 검색어 전달)
         # 형식: /시작/종료/RCP_NM=이름&RCP_PARTS_DTLS=재료
         url = f"{ApiService.BASE_URL}/{start}/{end}/RCP_PARTS_DTLS={keyword}"
+        print(f"🚀 요청 URL: {url}")  # 1번 단서: URL이 제대로 만들어졌나?
         
         try:
             res = requests.get(url)
@@ -77,6 +78,7 @@ class ApiService:
                 return [], 0
 
             total_count = int(data["COOKRCP01"]["total_count"])
+            print(f"📊 전체 레시피 개수: {total_count}")
             total_pages = (total_count + 9) // 10 # 10개씩 나눌 때 올림 처리
             
             rows = data["COOKRCP01"].get("row", [])            
@@ -95,7 +97,7 @@ class ApiService:
 
         except Exception as e:
             print(f"[API Search Error]: {e}")
-            return []
+            return [], 1
     @staticmethod
     def getAllRecipesWithPagination(page=1, per_page=10):
         """
