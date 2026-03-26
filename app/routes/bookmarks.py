@@ -1,13 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
-from app.common import (
-    requireLogin,
-    getRecipeByID,
-    getNextID,
-    getNow,
-    bookmarks,
-    buildRecipeCard,
-    formatDateTime,
-)
+from database import db
+from app.common import requireLogin, getRecipeByID, buildRecipeCard, formatDateTime
+from app.models.social import Bookmark
 
 bookmarks_bp = Blueprint("bookmarks", __name__)
 
@@ -22,27 +16,21 @@ def addBookmark(recipeID: str):
         flash("북마크할 레시피를 찾지 못했습니다.", "error")
         return redirect(url_for("main.recommendPage"))
 
-    alreadyBookmarked = next(
-        (
-            item
-            for item in bookmarks
-            if item["userID"] == currentUser.ID and item["recipeID"] == recipeID
-        ),
-        None,
-    )
+    existingBookmark = Bookmark.query.filter_by(
+        userID=currentUser.ID,
+        recipeID=recipeID
+    ).first()
 
-    if alreadyBookmarked:
+    if existingBookmark:
         flash("이미 북마크한 레시피입니다.", "info")
         return redirect(url_for("bookmarks.bookmarksPage"))
 
-    bookmarks.append(
-        {
-            "id": getNextID(bookmarks),
-            "userID": currentUser.ID,
-            "recipeID": recipeID,
-            "createdAt": getNow(),
-        }
+    newBookmark = Bookmark(
+        userID=currentUser.ID,
+        recipeID=recipeID
     )
+    db.session.add(newBookmark)
+    db.session.commit()
 
     flash("북마크에 저장되었습니다.", "success")
     return redirect(url_for("bookmarks.bookmarksPage"))
@@ -53,18 +41,16 @@ def bookmarksPage():
     if redirectResponse:
         return redirectResponse
 
-    userBookmarkList = sorted(
-        [item for item in bookmarks if item["userID"] == currentUser.ID],
-        key=lambda item: item["createdAt"],
-        reverse=True,
-    )
+    userBookmarkList = Bookmark.query.filter_by(
+        userID=currentUser.ID
+    ).order_by(Bookmark.createdAt.desc()).all()
 
     bookmarkedRecipes = []
     for bookmarkData in userBookmarkList:
-        recipeData = getRecipeByID(bookmarkData["recipeID"])
+        recipeData = getRecipeByID(bookmarkData.recipeID)
         if recipeData:
             recipeCard = buildRecipeCard(recipeData, currentUser.ID)
-            recipeCard["createdAt"] = formatDateTime(bookmarkData["createdAt"])
+            recipeCard["createdAt"] = formatDateTime(bookmarkData.createdAt)
             bookmarkedRecipes.append(recipeCard)
 
     return render_template("bookmarks.html", bookmarkedRecipes=bookmarkedRecipes)
@@ -75,19 +61,17 @@ def removeBookmark(recipeID: str):
     if redirectResponse:
         return redirectResponse
 
-    targetBookmark = next(
-        (
-            item
-            for item in bookmarks
-            if item["userID"] == currentUser.ID and item["recipeID"] == recipeID
-        ),
-        None,
-    )
+    targetBookmark = Bookmark.query.filter_by(
+        userID=currentUser.ID,
+        recipeID=recipeID
+    ).first()
 
     if targetBookmark is None:
         flash("삭제할 북마크를 찾지 못했습니다.", "error")
         return redirect(url_for("bookmarks.bookmarksPage"))
 
-    bookmarks.remove(targetBookmark)
+    db.session.delete(targetBookmark)
+    db.session.commit()
+
     flash("북마크가 삭제되었습니다.", "success")
     return redirect(url_for("bookmarks.bookmarksPage"))
