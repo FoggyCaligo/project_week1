@@ -82,21 +82,25 @@ def recommendPage():
     sort_type = request.args.get('sort', 'matchPercent') # 정렬값도 받아줍시다!
     
     if raw_query:
-        # 1. 검색어가 있으면 검색 결과 보여주기
-        recipes, total_pages = ApiService.searchRecipesFromAPI(raw_query, page=page)
+        # 검색어가 있으면: 사용자 냉장고 재료 + 입력 재료를 함께 반영해서 계산
+        recipes, total_pages = ApiService.searchRecipesFromAPI(
+            raw_query,
+            user_id=currentUser.ID,
+            page=page,
+        )
     else:
-        # 🎯 2. [수정 포인트] 검색어 없으면 우리가 만든 '냉장고 기반 추천' 호출!
-        # currentUser.userID (또는 id)를 넘겨줍니다.
-        recipes = FridgeService.get_recommended_recipes(currentUser.ID) 
-        total_pages = 1 # API 추천은 일단 1페이지로 처리
-    
-    # 3. 정렬 로직 (필요시 추가)
-    if not raw_query and recipes:
+        # 검색어가 없으면: 기존 냉장고 기반 추천 사용
+        recipes = FridgeService.get_recommended_recipes(currentUser.ID)
+        total_pages = 1
+
+    # 검색 결과/추천 결과 모두 동일한 기준으로 정렬
+    if recipes:
         if sort_type == 'matchPercent':
             recipes.sort(key=lambda x: x.get('matchPercent', 0), reverse=True)
         elif sort_type == 'missingCount':
             recipes.sort(key=lambda x: len(x.get('missingIngredients', [])))
-
+            
+            
     return render_template("recommend.html", 
                            recipes=recipes, 
                            total_pages=total_pages,

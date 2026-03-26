@@ -26,6 +26,7 @@
                         <input type="date" id="expire_date" class="input">
                     </div>
                     <div class="formField fridgeAddButtonWrap">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btnPrimary fridgeAddButton">추가</button>
                     </div>
                 </form>
