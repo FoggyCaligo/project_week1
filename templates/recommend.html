@@ -10,29 +10,6 @@
         <p class="sectionDesc">보유 재료와 일치율이 높은 레시피를 우선 추천합니다.</p>
       </div>
     </div>
-
-    {# --- 정렬 필터 --- #}
-    <section class="card section">
-      <div class="cardBody">
-        <form action="{{ url_for('main.recommendPage') }}" method="get" class="formRow">
-          <div class="formGroup">
-            <label for="sort" class="formLabel">정렬</label>
-            <select name="sort" id="sort" class="select">
-              <option value="matchPercent">일치율 높은 순</option>
-              <option value="missingCount">부족 재료 적은 순</option>
-              <option value="cookTime">조리 시간 짧은 순</option>
-            </select>
-          </div>
-          {# 검색어 유지용 히든 필드 #}
-          <input type="hidden" name="q" value="{{ keyword }}">
-
-          <div class="formGroup" style="align-self:end;">
-            <button type="submit" class="btn btnPrimary">적용</button>
-          </div>
-        </form>
-      </div>
-    </section>
-
     {# --- 레시피 목록 --- #}
     <div class="grid3">
       {% for recipe in recipes %}
