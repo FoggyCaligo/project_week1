@@ -14,11 +14,74 @@ ingredientAliasMap = {
     "감자": "감자", "당근": "당근", "애호박": "애호박", "버터": "버터", "간장": "간장",
 }
 
+recipeCatalog = [
+    {
+        "recipeID": "R001", "recipeName": "계란볶음밥",
+        "description": "남은 밥과 계란으로 빠르게 만들 수 있는 기본 볶음밥입니다.",
+        "imageUrl": "https://placehold.co/800x500?text=Egg+Fried+Rice",
+        "cookTime": 15, "calories": 520, "servingSize": 1,
+        "nutrition": {"carbohydrate": "63g", "protein": "18g", "fat": "19g"},
+        "ingredients": [
+            {"name": "밥", "amount": "1공기"}, {"name": "계란", "amount": "2개"},
+            {"name": "대파", "amount": "1/2대"}, {"name": "간장", "amount": "1큰술"},
+        ],
+        "steps": [
+            {"title": "재료 준비", "description": "대파를 송송 썰고 계란은 풀어둡니다.", "imageUrl": ""},
+            {"title": "계란 스크램블", "description": "팬에 계란을 먼저 볶아 덜어둡니다.", "imageUrl": ""},
+            {"title": "밥과 함께 볶기", "description": "대파를 볶다가 밥, 계란, 간장을 넣고 볶습니다.", "imageUrl": ""},
+        ],
+    },
+    {
+        "recipeID": "R002", "recipeName": "김치찌개",
+        "description": "김치와 돼지고기만 있어도 깊은 맛을 낼 수 있는 기본 찌개입니다.",
+        "imageUrl": "https://placehold.co/800x500?text=Kimchi+Stew",
+        "cookTime": 25, "calories": 430, "servingSize": 2,
+        "nutrition": {"carbohydrate": "16g", "protein": "28g", "fat": "24g"},
+        "ingredients": [
+            {"name": "김치", "amount": "2컵"}, {"name": "돼지고기", "amount": "150g"},
+            {"name": "두부", "amount": "1/2모"}, {"name": "대파", "amount": "1/2대"},
+        ],
+        "steps": [
+            {"title": "재료 볶기", "description": "김치와 돼지고기를 먼저 살짝 볶습니다.", "imageUrl": ""},
+            {"title": "끓이기", "description": "물을 붓고 충분히 끓여 국물 맛을 냅니다.", "imageUrl": ""},
+            {"title": "두부 넣기", "description": "두부와 대파를 넣고 5분 정도 더 끓입니다.", "imageUrl": ""},
+        ],
+    },
+    {
+        "recipeID": "R003", "recipeName": "두부부침",
+        "description": "간단하지만 반찬으로 좋은 기본 두부 요리입니다.",
+        "imageUrl": "https://placehold.co/800x500?text=Tofu+Steak",
+        "cookTime": 10, "calories": 260, "servingSize": 1,
+        "nutrition": {"carbohydrate": "8g", "protein": "18g", "fat": "15g"},
+        "ingredients": [
+            {"name": "두부", "amount": "1모"}, {"name": "간장", "amount": "1큰술"}, {"name": "대파", "amount": "약간"},
+        ],
+        "steps": [
+            {"title": "두부 물기 제거", "description": "키친타월로 두부의 물기를 닦습니다.", "imageUrl": ""},
+            {"title": "노릇하게 굽기", "description": "팬에 두부를 앞뒤로 굽습니다.", "imageUrl": ""},
+            {"title": "양념 곁들이기", "description": "간장과 대파를 곁들여 마무리합니다.", "imageUrl": ""},
+        ],
+    },
+    {
+        "recipeID": "R004", "recipeName": "감자양파볶음",
+        "description": "감자와 양파만으로도 만들 수 있는 쉬운 반찬입니다.",
+        "imageUrl": "https://placehold.co/800x500?text=Potato+Stir+Fry",
+        "cookTime": 18, "calories": 210, "servingSize": 2,
+        "nutrition": {"carbohydrate": "34g", "protein": "4g", "fat": "6g"},
+        "ingredients": [
+            {"name": "감자", "amount": "2개"}, {"name": "양파", "amount": "1/2개"}, {"name": "대파", "amount": "약간"},
+        ],
+        "steps": [
+            {"title": "채썰기", "description": "감자와 양파를 얇게 채썹니다.", "imageUrl": ""},
+            {"title": "감자 익히기", "description": "감자를 먼저 볶아 반쯤 익힙니다.", "imageUrl": ""},
+            {"title": "양파 넣고 마무리", "description": "양파와 대파를 넣고 숨이 죽을 때까지 볶습니다.", "imageUrl": ""},
+        ],
+    },
+]
 
 users = []
 bookmarks = []
 socialPosts = []
-recipeCatalog = []
 
 # ==========================================
 # 공통 헬퍼 함수들
@@ -56,9 +119,7 @@ def requireLogin():
     return currentUser, None
 
 def getRecipeByID(recipeID: str) -> dict | None:
-    from app.services.recipeService import RecipeDetailService
-    svc = RecipeDetailService()
-    return svc.get_formatted_recipe(recipeID)
+    return next((recipe for recipe in recipeCatalog if recipe["recipeID"] == recipeID), None)
 
 # DB 연동 (카멜 케이스 및 category 제거)
 def getUserIngredientList(userID: int) -> list[dict]:
@@ -120,21 +181,10 @@ def buildRecipeCard(recipeData: dict, userID: int | None) -> dict:
     }
 
 def buildRecommendedRecipeList(userID: int | None, sortKey: str = "matchPercent", searchKeyword: str = "") -> list[dict]:
-    from app.services.recipeService import RecipeDetailService
-    from database import db
-    from app.models.recipe import Recipe
-
     loweredKeyword = searchKeyword.strip().lower()
     resultList = []
 
-    svc = RecipeDetailService()
-    # 50개의 레시피를 샘플로 가져옵니다 (필요에 따라 limit 조절).
-    db_recipes = db.session.query(Recipe).limit(50).all()
-
-    for r in db_recipes:
-        recipeData = svc.get_formatted_recipe(r.rcpSeq, userID)
-        if not recipeData: continue
-
+    for recipeData in recipeCatalog:
         recipeCard = buildRecipeCard(recipeData, userID)
         if loweredKeyword:
             searchableText = " ".join([recipeData["recipeName"], recipeData["description"], " ".join(getRecipeIngredientNames(recipeData))]).lower()

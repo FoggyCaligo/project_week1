@@ -3,116 +3,569 @@
 
 {% block content %}
 <section class="section">
-  <div class="container">
-    <div class="sectionHeader">
-      <div>
-        <h1 class="sectionTitle">현재 냉장고</h1>
-        <p class="sectionDesc">보유 식재료를 추가하고 유통기한을 관리하세요.</p>
-      </div>
-    </div>
+    <div class="container" style="max-width: 800px; margin: 0 auto;">
+        
 
-    <div class="metricGrid section">
-      <div class="card metricCard">
-        <div class="metricLabel">전체 재료</div>
-        <div class="metricValue">{{ fridgeSummary.totalCount or 0 }}</div>
-      </div>
-      <div class="card metricCard">
-        <div class="metricLabel">임박 재료</div>
-        <div class="metricValue">{{ fridgeSummary.expiringCount or 0 }}</div>
-      </div>
-      <div class="card metricCard">
-        <div class="metricLabel">추천 가능 메뉴</div>
-        <div class="metricValue">{{ fridgeSummary.recommendCount or 0 }}</div>
-      </div>
-    </div>
-
-    <div class="grid2">
-      <section class="card">
-        <div class="cardBody">
-          <div class="sectionHeader">
+        <div class="sectionHeader fridgeHeader">
             <div>
-              <h2 class="sectionTitle">재료 추가</h2>
-              <p class="sectionDesc">재료명과 유통기한만 입력하세요.</p>
+                <h1 class="sectionTitle">현재 냉장고</h1>
+                <p class="sectionDesc">냉장고 속 식재료를 추가하고 유통기한을 한눈에 관리하세요.</p>
             </div>
-          </div>
-
-          <form action="{{ url_for('addIngredient') }}" method="post">
-            <div class="formGroup">
-              <label for="ingredientName" class="formLabel">재료명</label>
-              <input
-                type="text"
-                id="ingredientName"
-                name="ingredientName"
-                class="input"
-                placeholder="예: 계란, 두부, 양파"
-                required
-              />
-            </div>
-
-            <div class="formGroup">
-              <label for="expireDate" class="formLabel">유통기한</label>
-              <input type="date" id="expireDate" name="expireDate" class="input" required />
-            </div>
-
-            <div class="formGroup">
-              <span class="formLabel">빠른 추가</span>
-              <div class="tagList">
-                <span class="tag">계란</span>
-                <span class="tag">두부</span>
-                <span class="tag">양파</span>
-                <span class="tag">대파</span>
-                <span class="tag">우유</span>
-              </div>
-            </div>
-
-            <button type="submit" class="btn btnPrimary">재료 추가</button>
-          </form>
         </div>
-      </section>
+        
 
-      <section class="card">
-        <div class="cardBody">
-          <div class="sectionHeader">
-            <div>
-              <h2 class="sectionTitle">보유 재료 목록</h2>
-              <p class="sectionDesc">유통기한이 가까운 재료를 먼저 확인하세요.</p>
-            </div>
-          </div>
-
-          <div class="list">
-            {% for ingredient in ingredients %}
-            <div class="listItem">
-              <div class="listItemMain">
-                <strong>{{ ingredient.ingredientName }}</strong>
-                <span class="listItemSub">
-                  유통기한: {{ ingredient.expireDate }}
-                  {% if ingredient.normalizedName %}
-                    · 표준명: {{ ingredient.normalizedName }}
-                  {% endif %}
-                </span>
-              </div>
-
-              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                {% if ingredient.daysLeft is not none and ingredient.daysLeft < 0 %}
-                  <span class="tag tagDanger">기한 경과</span>
-                {% elif ingredient.daysLeft is not none and ingredient.daysLeft <= 3 %}
-                  <span class="tag tagWarning">임박</span>
-                {% else %}
-                  <span class="tag tagSuccess">안전</span>
-                {% endif %}
-
-                <form action="{{ url_for('deleteIngredient', id=ingredient.id) }}" method="post">
-                  <button type="submit" class="btn btnGhost">삭제</button>
+        <div class="card" style="margin-bottom: 32px;">
+            <div class="cardBody">
+                <form id="addForm" class="fridgeAddForm">
+                    <div class="formField">
+                        <label class="formLabel" for="ingredient_name">재료명</label>
+                        <input type="text" id="ingredient_name" class="input" placeholder="예: 당근, 양파" required>
+                    </div>
+                    <div class="formField">
+                        <label class="formLabel" for="category">분류</label>
+                        <select id="category" class="input" required>
+                            <option value="">분류 선택</option>
+                            <option value="채소">채소</option>
+                            <option value="과일">과일</option>
+                            <option value="육류">육류</option>
+                            <option value="수산물">수산물</option>
+                            <option value="유제품">유제품</option>
+                            <option value="가공식품">가공식품</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="formField">
+                        <label class="formLabel" for="expire_date">유통기한</label>
+                        <input type="date" id="expire_date" class="input" required>
+                    </div>
+                    <div class="formField fridgeAddButtonWrap">
+                        <button type="submit" class="btn btnPrimary fridgeAddButton">추가</button>
+                    </div>
                 </form>
-              </div>
             </div>
-            {% else %}
-            <div class="emptyState">등록된 재료가 없습니다.</div>
-            {% endfor %}
-          </div>
         </div>
-      </section>
+
+        <div class="sectionHeader" style="margin-top: 40px; margin-bottom: 16px;">
+            <h2 class="sectionTitle" style="font-size: 20px;">보관 중인 식재료 목록</h2>
+            <select id="sortSelect" class="input" style="width: auto; padding: 6px 32px 6px 12px; font-size: 14px;" onchange="loadItems()">
+                <option value="expire_asc">유통기한 임박순</option>
+                <option value="name_asc">이름 가나다순</option>
+                <option value="created_desc">최근 등록순</option>
+            </select>
+        </div>
+
+        <div class="card">
+            <!-- 로딩 상태 표시 -->
+            <div id="loadingState" class="emptyState" style="padding: 24px;">
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px;"></div>
+            </div>
+            
+            <ul id="itemList" style="list-style: none; padding: 0; margin: 0; display: none;">
+                <!-- 스크립트를 통해 아이템 렌더링 -->
+            </ul>
+        </div>
+
+        <div id="recipeSection" style="margin-top: 48px; display: none;">
+            <div class="sectionHeader">
+                <h2 class="sectionTitle" style="font-size: 20px;">💡 이런 레시피는 어때요?</h2>
+                <p class="sectionDesc">유통기한이 임박한 재료를 활용한 추천 요리입니다.</p>
+            </div>
+            
+            <div class="grid3" id="recipeList">
+                <!-- 스크립트를 통해 추천 레시피 렌더링 -->
+            </div>
+        </div>
     </div>
-  </div>
 </section>
+
+<!-- 상세/수정 모달 -->
+<div id="itemModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px);">
+    <div class="card" style="width: 90%; max-width: 420px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15); max-height: 90vh; overflow-y: auto;">
+        <span onclick="closeModal()" style="position: absolute; right: 20px; top: 16px; cursor: pointer; font-size: 24px; color: var(--colorTextSub); line-height: 1;">&times;</span>
+        <div class="cardBody">
+            <h2 id="modalTitle" style="margin: 0 0 20px 0; font-size: 20px; font-weight: 800; color: var(--colorText); padding-bottom: 12px; border-bottom: 2px solid var(--colorPrimary);">재료 상세</h2>
+            
+            <div id="modalContent">
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px; padding: 10px 0;">
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
+                        <strong style="color: var(--colorTextSub);">재료명</strong>
+                        <span id="detailName" style="font-weight: 600; color: var(--colorText);"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
+                        <strong style="color: var(--colorTextSub);">분류</strong>
+                        <span id="detailCategory" style="color: var(--colorText);"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--colorBorder);">
+                        <strong style="color: var(--colorTextSub);">유통기한</strong>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span id="detailExpire" style="color: var(--colorText);"></span>
+                            <span id="detailBadge" style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: white;"></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-bottom: 4px;">
+                        <strong style="color: var(--colorTextSub);">등록일시</strong>
+                        <span id="detailCreated" style="font-size: 13px; color: var(--colorTextSub);"></span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 24px; display: flex; gap: 10px;">
+                    <button type="button" class="btn btnSecondary" style="flex: 1; background: #e8f5e9; color: #55b271; border: none; font-weight: 600; padding: 12px; border-radius: 8px;" onclick="closeModal()">닫기</button>
+                    <button type="button" class="btn btnPrimary" style="flex: 1; background: #55b271; border: none; font-weight: 600; padding: 12px; border-radius: 8px;" onclick="showEditForm()">수정하기</button>
+                </div>
+            </div>
+
+            <form id="editForm" style="display: none;">
+                <input type="hidden" id="edit_id">
+                <div class="formGroup">
+                    <label class="formLabel">재료명</label>
+                    <input type="text" id="edit_name" class="input" required>
+                </div>
+                <div class="formGroup">
+                    <label class="formLabel">분류</label>
+                    <select id="edit_category" class="input">
+                        <option value="채소">채소</option>
+                        <option value="과일">과일</option>
+                        <option value="육류">육류</option>
+                        <option value="수산물">수산물</option>
+                        <option value="유제품">유제품</option>
+                        <option value="가공식품">가공식품</option>
+                        <option value="기타">기타</option>
+                    </select>
+                </div>
+                <div class="formGroup" style="margin-bottom: 24px;">
+                    <label class="formLabel">유통기한</label>
+                    <input type="date" id="edit_expire" class="input" required>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btnGhost" style="flex: 1;" onclick="cancelEdit()">취소</button>
+                    <button type="submit" class="btn btnPrimary" style="flex: 1;">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <!-- 폰트어썸 아이콘 링크 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--colorBorder);
+        transition: background-color 0.2s;
+    }
+    .item-row:last-child {
+        border-bottom: none;
+    }
+    .item-row:hover {
+        background-color: rgba(0,0,0,0.01);
+    }
+    .item-info-clickable {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        cursor: pointer;
+        flex: 1;
+    }
+    .item-name-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--colorText);
+    }
+    .item-meta-wrap {
+        font-size: 14px;
+        color: var(--colorTextSub);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    .badge-dday {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        color: white;
+    }
+    .badge-success { background-color: #2ecc71; color: white; }
+    .badge-warning { background-color: #f1c40f; color: white; }
+    .badge-danger { background-color: #e74c3c; color: white; }
+
+    /* 스켈레톤 로딩 스타일 추가 */
+    .skeleton-text {
+        background: #e9ecef;
+        border-radius: 4px;
+        animation: pulse 1.5s infinite ease-in-out;
+        color: transparent;
+    }
+
+    .skeletonCard {
+        background: #fff;
+        border-radius: var(--radiusLg);
+        height: 240px;
+        animation: pulse 1.5s infinite ease-in-out;
+        box-shadow: var(--shadowSoft);
+    }
+
+    @keyframes pulse {
+        0% { background-color: #f1f3f5; }
+        50% { background-color: #e9ecef; }
+        100% { background-color: #f1f3f5; }
+    }
+
+    .fridgeAddForm {
+        display: grid;
+        grid-template-columns: 2fr 1.2fr 1.4fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .formField {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .fridgeAddButton {
+        min-width: 96px;
+    }
+
+    @media (max-width: 900px) {
+        .fridgeAddForm {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .fridgeAddButtonWrap {
+            grid-column: 1 / -1;
+        }
+
+        .fridgeAddButton {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .fridgeAddForm {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+    <script>
+        const USER_ID = {{ session.get('userID', 1) }};
+
+        function renderSkeleton() {
+            return `
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px; margin-bottom: 12px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton-text" style="width: 100%; height: 60px; background: #e9ecef; border-radius: 4px; animation: pulse 1.5s infinite ease-in-out;"></div>
+            `;
+        }
+
+        // 재료 추가/수정/삭제 시 레시피 새로고침 추가
+        async function loadItems() {
+            const sort = document.getElementById('sortSelect').value;
+            const list = document.getElementById('itemList');
+            const loadingState = document.getElementById('loadingState');
+            
+            // 로딩 UI 표시, 목록 숨김
+            loadingState.style.display = 'block';
+            list.style.display = 'none';
+            
+            try {
+                const res = await fetch(`/api/fridge/${USER_ID}?sort=${sort}`);
+                const data = await res.json();
+                list.innerHTML = '';
+
+                if (!res.ok) {
+                    loadingState.innerHTML = `<p style="color:var(--colorTextSub);">${data.message || '데이터를 불러오지 못했습니다.'}</p>`;
+                    return;
+                }
+                
+                // 데이터 로딩 완료 시 처리
+                loadingState.style.display = 'none';
+                list.style.display = 'block';
+
+                if (!data.items || data.items.length === 0) {
+                    list.innerHTML = '<div class="emptyState">냉장고가 텅 비어있습니다.<br>위에서 식재료를 추가해보세요!</div>';
+                    return;
+                }
+
+                data.items.forEach(item => {
+                    let badgeClass = 'badge-success';
+                    let badgeText = `D-${item.days_left}`;
+                    
+                    if (item.days_left < 0) {
+                        badgeClass = 'badge-danger';
+                        badgeText = `경과 (D+${Math.abs(item.days_left)})`;
+                    } else if (item.days_left <= 3) {
+                        badgeClass = 'badge-warning'; // 3일 이하 임박 
+                    } else if (item.days_left === 0) {
+                        badgeClass = 'badge-danger';
+                        badgeText = `D-Day`;
+                    }
+
+                    const li = document.createElement('li');
+                    li.style = "padding: 16px 20px; border-bottom: 1px solid var(--colorBorder); display: flex; align-items: center; justify-content: space-between; transition: background-color 0.2s; cursor: pointer;";
+                    li.onmouseover = function() { this.style.backgroundColor = '#f8f9fa'; };
+                    li.onmouseout = function() { this.style.backgroundColor = 'transparent'; };
+                    
+                    // 뱃지 인라인 스타일 적용
+                    let badgeStyle = '';
+                    if (badgeClass === 'badge-success') {
+                        badgeStyle = 'background-color: #5FAE7B; color: white;';
+                    } else if (badgeClass === 'badge-warning') {
+                        badgeStyle = 'background-color: #F4A261; color: #2c3e50;';
+                    } else {
+                        badgeStyle = 'background-color: #E76F51; color: white;';
+                    }
+
+                    // 아이콘 클래스 결정
+                    let iconClass = 'fa-solid fa-leaf'; // 기본(채소 등)
+                    if (item.category === '과일') iconClass = 'fa-solid fa-apple-whole';
+                    else if (item.category === '육류') iconClass = 'fa-solid fa-drumstick-bite';
+                    else if (item.category === '수산물') iconClass = 'fa-solid fa-fish';
+                    else if (item.category === '유제품') iconClass = 'fa-solid fa-cheese';
+                    else if (item.category === '가공식품') iconClass = 'fa-solid fa-box-open';
+                    else if (item.category === '기타') iconClass = 'fa-solid fa-utensils';
+
+                 
+                    li.innerHTML = `
+                        <div style="flex: 1; display: flex; align-items: center; gap: 16px; cursor: pointer;" onclick="openModal(${item.id})">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #f1f3f5; display: flex; align-items: center; justify-content: center; color: var(--colorPrimary); font-size: 18px;">
+                                <i class="${iconClass}"></i>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 16px; font-weight: 600; color: var(--colorText);">${item.ingredient_name}</span>
+                                    <span class="badge-dday" style="${badgeStyle}">${badgeText}</span>
+                                </div>
+                                <div style="font-size: 13px; color: var(--colorTextSub); display: flex; gap: 8px; align-items: center;">
+                                    <span>${item.category}</span>
+                                    <span style="color: #dee2e6;">|</span>
+                                    <span><i class="fa-regular fa-clock" style="margin-right: 4px;"></i>${item.expire_date}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btnGhost" style="color: #E76F51; border: 1px solid gray border-radius: 20; width:36px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="deleteItem(${item.id})" title="삭제">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error("데이터 로드 오류:", err);
+            }
+        }
+
+        // 재료 상세 모달 열기
+        async function openModal(id) {
+            try {
+                const res = await fetch(`/api/fridge/item/${id}`);
+                if (!res.ok) {
+                    alert('상세 정보를 불러올 수 없습니다.');
+                    return;
+                }
+                const data = await res.json();
+                const item = data.item;
+
+                document.getElementById('detailName').innerText = item.ingredient_name;
+                document.getElementById('detailCategory').innerText = item.category;
+                document.getElementById('detailExpire').innerText = item.expire_date;
+                
+                // 등록일시는 YYYY-MM-DD 만 표시
+                const createdDate = item.created_at ? item.created_at.split(' ')[0] : '-';
+                document.getElementById('detailCreated').innerText = createdDate;
+
+                let badgeClass = 'badge-success';
+                let badgeText = `D-${item.days_left}`;
+                if (item.days_left < 0) {
+                    badgeClass = 'badge-danger';
+                    badgeText = `(D+${Math.abs(item.days_left)})`;
+                } else if (item.days_left <= 3) {
+                    badgeClass = 'badge-warning';
+                } else if (item.days_left === 0) {
+                    badgeClass = 'badge-danger';
+                    badgeText = `D-Day`;
+                }
+                
+                const badge = document.getElementById('detailBadge');
+                badge.className = `badge-dday ${badgeClass}`;
+                badge.innerText = badgeText;
+                
+                if (badgeClass === 'badge-success') {
+                    badge.style.backgroundColor = '#2ecc71';
+                    badge.style.color = 'white';
+                } else if (badgeClass === 'badge-warning') {
+                    badge.style.backgroundColor = '#f1c40f';
+                    badge.style.color = '#2c3e50';
+                } else {
+                    badge.style.backgroundColor = '#e74c3c';
+                    badge.style.color = 'white';
+                }
+
+                // 폼에도 값 미리 채워넣기
+                document.getElementById('edit_id').value = item.id;
+                document.getElementById('edit_name').value = item.ingredient_name;
+                document.getElementById('edit_category').value = item.category;
+                document.getElementById('edit_expire').value = item.expire_date;
+
+                cancelEdit(); // 상세정보 보기 모드로 초기화
+                document.getElementById('itemModal').style.display = 'flex';
+                
+                // 모달 기본 높이 설정 (스크롤 없도록)
+                document.querySelector('#itemModal .card').style.maxHeight = 'auto';
+                document.querySelector('#itemModal .card').style.overflowY = 'visible';
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').style.display = 'none';
+        }
+
+        function showEditForm() {
+            document.getElementById('modalContent').style.display = 'none';
+            document.getElementById('editForm').style.display = 'block';
+            document.getElementById('modalTitle').innerText = '재료 수정';
+        }
+
+        function cancelEdit() {
+            document.getElementById('modalContent').style.display = 'block';
+            document.getElementById('editForm').style.display = 'none';
+            document.getElementById('modalTitle').innerText = '재료 상세';
+        }
+
+        // 재료 수정 처리
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const payload = {
+                ingredient_name: document.getElementById('edit_name').value,
+                category: document.getElementById('edit_category').value,
+                expire_date: document.getElementById('edit_expire').value
+            };
+
+            try {
+                const res = await fetch(`/api/fridge/edit/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    closeModal();
+                    loadItems(); 
+                    loadRecommendedRecipes();
+                } else {
+                    const data = await res.json();
+                    alert(data.message || '수정에 실패했습니다.');
+                }
+            } catch (err) {
+                alert("서버와의 통신 오류가 발생했습니다.");
+            }
+        });
+
+        // 재료 추가 처리
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                user_id: USER_ID,
+                ingredient_name: document.getElementById('ingredient_name').value,
+                category: document.getElementById('category').value,
+                expire_date: document.getElementById('expire_date').value
+            };
+
+            try {
+                const res = await fetch('/api/fridge/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('addForm').reset();
+                    loadItems(); // 목록 새로고침
+                    loadRecommendedRecipes(); // 추천 레시피 새로고침
+                } else {
+                    const data = await res.json();
+                    alert(data.message || '추가에 실패했습니다.');
+                }
+            } catch (err) {
+                alert("서버와의 통신 오류가 발생했습니다.");
+            }
+        });
+
+        // 재료 삭제 처리
+        async function deleteItem(id) {
+            if (!confirm('해당 식재료를 삭제하시겠습니까?')) return;
+            try {
+                const res = await fetch(`/api/fridge/delete/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadItems();
+                    loadRecommendedRecipes();
+                    closeModal(); // 모달이 열려있다면 닫기
+                } else {
+                    alert('삭제에 실패했습니다.');
+                }
+            } catch (err) {
+                alert("서버 통신 오류");
+            }
+        }
+
+        async function loadRecommendedRecipes() {
+            const list = document.getElementById('recipeList');
+            const section = document.getElementById('recipeSection');
+            
+            // 로딩 스켈레톤 UI 표시
+            section.style.display = 'block';
+            list.innerHTML = `
+                <div class="skeletonCard"></div>
+                <div class="skeletonCard"></div>
+                <div class="skeletonCard"></div>
+            `;
+            
+            try {
+                const res = await fetch('/api/fridge/recipes');
+                const data = await res.json();
+                
+                if (res.ok && data.recipes && data.recipes.length > 0) {
+                    list.innerHTML = '';
+                    
+                    data.recipes.forEach(recipe => {
+                        const a = document.createElement('a');
+                        a.href = `/recipes/${recipe.recipeID}`;
+                        a.style = "text-decoration: none; color: inherit;";
+                        a.innerHTML = `
+                            <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; height: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
+                                <img src="${recipe.imageUrl}" alt="${recipe.recipeName}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
+                                <div class="cardBody" style="padding: 16px; flex: 1;">
+                                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">${recipe.recipeName}</h3>
+                                    <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${recipe.description}</p>
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(a);
+                    });
+                } else {
+                    section.style.display = 'none';
+                }
+            } catch (err) {
+                console.error("추천 레시피 로드 오류:", err);
+                section.style.display = 'none';
+            }
+        }
+
+        // 페이지 로드 시 최초 데이터 조회
+        loadItems();
+        loadRecommendedRecipes();
+    </script>
 {% endblock %}

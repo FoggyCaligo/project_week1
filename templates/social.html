@@ -3,7 +3,7 @@
 
 {% block content %}
 <section class="section">
-  <div class="container grid2">
+  <div class="container grid2" style="height:50vh;">
     <section class="card">
       <div class="cardBody">
         <div class="sectionHeader">
@@ -15,13 +15,18 @@
 
         <form action="{{ url_for('createSocialPost') }}" method="post" enctype="multipart/form-data">
           <div class="formGroup">
-            <label for="recipeID" class="formLabel">레시피 선택</label>
+            <label for="recipeID" class="formLabel">북마크한 레시피 선택</label>
             <select id="recipeID" name="recipeID" class="select" required>
-              <option value="">레시피를 선택하세요</option>
+              <option value="">북마크한 레시피를 선택하세요</option>
               {% for recipe in availableRecipes %}
                 <option value="{{ recipe.recipeID }}">{{ recipe.recipeName }}</option>
               {% endfor %}
             </select>
+            {% if currentUser and availableRecipes|length == 0 %}
+              <div class="emptyState" style="margin-bottom: 16px;">
+                먼저 레시피를 북마크한 뒤 후기를 작성할 수 있습니다.
+              </div>
+            {% endif %}
           </div>
 
           <div class="formGroup">
@@ -35,8 +40,31 @@
           </div>
 
           <div class="formGroup">
-            <label for="imageFile" class="formLabel">이미지 업로드</label>
-            <input type="file" id="imageFile" name="imageFile" class="input" accept="image/*" />
+            <label class="formLabel">이미지 업로드</label>
+
+            <input
+              type="file"
+              id="imageFile"
+              name="imageFile"
+              accept="image/*"
+              hidden
+            />
+
+            <label for="imageFile" class="imageUploadBox" id="imageUploadBox">
+              <div class="uploadPlaceholder" id="uploadPlaceholder">
+                <div class="uploadIcon">📷</div>
+                <strong>이미지를 업로드하세요</strong>
+                <p>클릭해서 파일 선택</p>
+              </div>
+              <img id="imagePreview" class="imagePreview hidden" alt="업로드 이미지 미리보기" />
+            </label>
+
+            <div class="imageUploadBottom">
+              <div id="imageFileName" class="imageFileName"></div>
+              <button type="button" id="removeImageButton" class="btn btnSecondary hidden">
+                이미지 제거
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn btnPrimary">후기 등록</button>
@@ -44,7 +72,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" style="overflow-y:auto;">
       <div class="cardBody">
         <div class="sectionHeader">
           <div>
@@ -81,4 +109,116 @@
     </section>
   </div>
 </section>
+
+<style>
+  .imageUploadBox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 220px;
+    border: 2px dashed #d1d5db;
+    border-radius: 16px;
+    background: #f9fafb;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .imageUploadBox:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+  }
+
+  .uploadPlaceholder {
+    text-align: center;
+    color: #6b7280;
+    padding: 24px;
+  }
+
+  .uploadIcon {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  .uploadPlaceholder strong {
+    display: block;
+    font-size: 16px;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+
+  .uploadPlaceholder p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .imagePreview {
+    display: block;
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+  }
+
+  .imageUploadBottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .imageFileName {
+    font-size: 14px;
+    color: #6b7280;
+    word-break: break-all;
+    flex: 1;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+</style>
+
+<script>
+  const imageInput = document.getElementById('imageFile');
+  const imagePreview = document.getElementById('imagePreview');
+  const imageFileName = document.getElementById('imageFileName');
+  const removeImageButton = document.getElementById('removeImageButton');
+  const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+
+  imageInput.addEventListener('change', function () {
+    const file = this.files && this.files[0];
+
+    if (!file) {
+      resetImageInput();
+      return;
+    }
+
+    imageFileName.textContent = file.name;
+    removeImageButton.classList.remove('hidden');
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      imagePreview.src = event.target.result;
+      imagePreview.classList.remove('hidden');
+      uploadPlaceholder.classList.add('hidden');
+    };
+
+    reader.readAsDataURL(file);
+  });
+
+  removeImageButton.addEventListener('click', function () {
+    resetImageInput();
+  });
+
+  function resetImageInput() {
+    imageInput.value = '';
+    imagePreview.src = '';
+    imagePreview.classList.add('hidden');
+    uploadPlaceholder.classList.remove('hidden');
+    imageFileName.textContent = '';
+    removeImageButton.classList.add('hidden');
+  }
+</script>
 {% endblock %}
