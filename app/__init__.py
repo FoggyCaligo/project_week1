@@ -1,7 +1,7 @@
 from flask import Flask, url_for as flask_url_for
 from database import init_database
 from pathlib import Path
-
+from flask_wtf.csrf import CSRFProtect
 
 def create_app():
     app = Flask(
@@ -12,6 +12,8 @@ def create_app():
 
     # 데이터베이스 연동, .env 환경변수 로드, 테이블 생성
     init_database(app)
+    csrf = CSRFProtect()
+    csrf.init_app(app)
 
     # 이미지 업로드 폴더 세팅
     app.config["UPLOAD_FOLDER"] = str(Path(app.static_folder) / "uploads")

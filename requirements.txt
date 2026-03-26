@@ -6,3 +6,4 @@ gunicorn
 werkzeug
 requests
 gunicorn
+flask-wtf
