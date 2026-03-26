@@ -29,7 +29,7 @@ from sqlalchemy import func
 class ApiService:
     
     @staticmethod
-    def getRandomRecommendations(count=4):
+    def getRandomRecommendations(count=3):
         try:
             # 1. DB에서 랜덤하게 count개만큼 쿼리 (ORDER BY RAND())
             random_recipes = Recipe.query.order_by(func.rand()).limit(count).all()
@@ -42,6 +42,10 @@ class ApiService:
                     "RCP_NM": r.rcpNm, # 모델 필드명 확인
                     "ATT_FILE_NO_MAIN": r.attFileNoMain or "/static/images/default_recipe.jpg",
                     "RCP_PAT2": r.rcpPat2,
+                    "description": f"{r.rcpWay2} | {r.rcpPat2}",
+                    # 🎯 [추가] 비로그인/랜덤 추천 시 에러 방지용 빈 리스트
+                    "haveIngredients": [],
+                    "missingIngredients": [],
                     "matchPercent": 0
                 })
             return refined_list
