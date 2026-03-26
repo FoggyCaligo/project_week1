@@ -14,7 +14,11 @@
       <nav class="mainNav">
         <a href="{{ url_for('home') }}">홈</a>
         <a href="{{ url_for('fridge_views.fridge_index') }}">현재 냉장고</a>
+        {% if currentUser %}
         <a href="{{ url_for('recommendPage') }}">추천 레시피</a>
+        {% else %}
+        <a href="{{ url_for('main.allRecipesPage') }}">전체 레시피</a>
+        {% endif %}
         <a href="{{ url_for('bookmarksPage') }}">북마크</a>
         <a href="{{ url_for('socialPage') }}">소셜</a>
       </nav>
