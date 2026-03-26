@@ -2,7 +2,7 @@
 async function checkDuplicate(fieldId, msgId, endpoint) {
     const value = document.getElementById(fieldId).value.trim();
     const msgArea = document.getElementById(msgId);
-
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     if (!value) {
         alert("내용을 입력해주세요.");
         return;
@@ -11,7 +11,10 @@ async function checkDuplicate(fieldId, msgId, endpoint) {
     try {
         const response = await fetch(endpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify({ field: fieldId, value: value })
         });
         const data = await response.json();
