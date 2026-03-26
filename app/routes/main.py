@@ -17,22 +17,29 @@ def home():
 
     if currentUser:
         from app.models.ingredient import UserIngredient
-        from app.services.fridge_service import FridgeService # 🎯 서비스 임포트 확인!
         
-        # 1. 내 냉장고 전체 재료 개수
+        # 1. 내 냉장고 전체 재료 수 (amounts 합산 기준)
         all_items = UserIngredient.query.filter_by(userID=currentUser.ID).all()
-        summary["ingredientCount"] = len(all_items)
+        summary["ingredientCount"] = sum(
+            (item.amounts if getattr(item, "amounts", None) is not None else 1)
+            for item in all_items
+        )
 
-        # 2. 유통기한 임박 재료 찾기 (오늘 기준 3일 이내)
+        # 2. 유통기한 임박 재료 찾기 (오늘 기준 7일 이내, amounts 합산)
         today = date.today()
         for item in all_items:
             days_left = (item.expireDate - today).days
-            if 0 <= days_left <= 3:
-                summary["expiringCount"] += 1
+            if 0 <= days_left <= 7:
+                amt = item.amounts if getattr(item, "amounts", None) is not None else 1
+                summary["expiringCount"] += amt
                 expiringIngredients.append({
                     "ingredientName": item.ingredientName,
-                    "daysLeft": days_left
+                    "daysLeft": days_left,
+                    "amounts": amt,
                 })
+
+        # 임박순 정렬 (가장 빨리 만료되는 순)
+        expiringIngredients.sort(key=lambda x: (x.get("daysLeft", 999999), x.get("ingredientName", "")))
         
         # 🎯 3. [핵심] 랜덤 추천 대신 '내 냉장고 기반 추천' 데이터 가져오기!
         recommended_list = FridgeService.get_recommended_recipes(currentUser.ID)

@@ -63,7 +63,8 @@
 <section class="section" style="padding-top: 0;">
   <div class="container grid2">
     {% if currentUser %}
-    <div class="card">
+    <a href="{{ url_for('fridge_views.fridge_index') }}" style="text-decoration:none; color:inherit;">
+    <div class="card" style="cursor:pointer;" role="link" tabindex="0">
       <div class="cardBody">
         <h2 class="sectionTitle">오늘의 요약</h2>
         <div class="metricGrid" style="margin-top: 20px;">
@@ -78,6 +79,7 @@
         </div>
       </div>
     </div>
+    </a>
     {% else %}
     <div class="card">
       <div class="cardBody">
@@ -95,14 +97,27 @@
         <h2 class="sectionTitle">유통기한 알람</h2>
         <div class="list" style="margin-top: 15px;">
           {% if currentUser %}
-            {% for ingredient in expiringIngredients %}
-            <div class="listItem">
-              <span><strong>{{ ingredient.ingredientName }}</strong></span>
-              <span class="tag tagWarning">{{ ingredient.daysLeft }}일 남음</span>
-            </div>
+            {% if expiringIngredients and (expiringIngredients|length > 0) %}
+              {% set showItems = expiringIngredients %}
+              {% if expiringIngredients|length >= 4 %}
+                {% set showItems = expiringIngredients[:3] %}
+              {% endif %}
+
+              {% for ingredient in showItems %}
+                <a href="{{ url_for('fridge_views.fridge_index') }}?openIngredient={{ ingredient.ingredientName|urlencode }}"
+                   class="listItem" style="cursor:pointer; text-decoration:none; color:inherit; display:flex;">
+                  <span><strong>{{ ingredient.ingredientName }}</strong></span>
+                  <span class="tag tagWarning">{{ ingredient.daysLeft }}일 남음</span>
+                </a>
+              {% endfor %}
+
+              {% if expiringIngredients|length >= 4 %}
+                <a href="{{ url_for('fridge_views.fridge_index') }}" class="btn btnGhost"
+                   style="width:100%; margin-top: 12px; display:inline-flex; justify-content:center;">더보기</a>
+              {% endif %}
             {% else %}
-            <p class="emptyState">임박한 재료가 없습니다. 신선하네요!</p>
-            {% endfor %}
+              <p class="emptyState">임박한 재료가 없습니다. 신선하네요!</p>
+            {% endif %}
           {% else %}
             <p class="emptyState">로그인하시면 유통기한 임박 재료를<br>가장 먼저 알려드립니다.</p>
           {% endif %}
