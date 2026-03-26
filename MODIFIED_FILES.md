@@ -27,3 +27,8 @@
    - **공용 DB(`userIngredients`)에 `category` 컬럼이 없으면** 아래를 한 번 실행해야 합니다.  
      `ALTER TABLE userIngredients ADD COLUMN category VARCHAR(32) NULL COMMENT '분류' AFTER expireDate;`
    - 냉장고 메인 그리드 카드(동일 재료 그룹)에도 분류명을 한 줄로 표시하며, 그룹 내 분류가 여러 개면 `채소 · 과일`처럼 구분해 표시합니다.
+
+9. `templates/fridge.html` (검색·가상 결제 플로우)
+   - 상단 폼: **추가** → **검색**, 유통기한은 `type="month"`(선택), 재료명·분류에 필수 표시(`*`).
+   - 검색 시 가상 마트 상품 목록 모달(가격·유통기한 전일 표시, 연·월만 선택 시 해당 월 내 임의 일자, 미선택 시 오늘 이후 임의 일자).
+   - 체크박스·수량으로 복수 담기 후 **냉장고에 추가하기** → 총액 확인 모달 → **예** 시 가상 결제 완료 안내 후 기존 `/api/fridge/add`로 건별 저장.
