@@ -1064,6 +1064,7 @@
                                  'background-color: #e74c3c; color: white;';
 
                 const createdDate = inst.created_at ? inst.created_at.split(' ')[0] : '-';
+                const instAmounts = (inst.amounts != null && Number.isFinite(inst.amounts)) ? inst.amounts : 1;
 
                 instancesHtml += `
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; background: #f8f9fa; border-radius: var(--radiusMd); margin-bottom: 10px; border: 1px solid #e9ecef;">
@@ -1071,6 +1072,7 @@
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span style="font-size: 15px; font-weight: 700; color: var(--colorText);">${inst.expire_date}까지</span>
                                 <span class="badge-dday" style="${badgeStyle} padding: 3px 8px; font-size: 11px;">${badgeText}</span>
+                                <span class="badge-dday" style="background: #111827; color: white; padding: 3px 8px; font-size: 11px;">수량 ${instAmounts}개</span>
                             </div>
                             <div style="font-size: 13px; color: var(--colorTextSub);">등록일: ${createdDate} | ${inst.category || '기타'}</div>
                         </div>
