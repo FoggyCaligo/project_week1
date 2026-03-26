@@ -28,6 +28,7 @@
           <div class="recipeActions">
             <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
             <form action="{{ url_for('removeBookmark', recipeID=recipe.recipeID) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btnGhost">삭제</button>
             </form>
           </div>

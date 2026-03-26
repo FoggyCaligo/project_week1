@@ -9,9 +9,13 @@ class SocialPost(db.Model):
     recipeID = db.Column(db.String(255), comment='관련 레시피 ID')
     title = db.Column(db.String(255), nullable=False, comment='제목')
     content = db.Column(db.Text, nullable=False, comment='후기 내용')
-    imagePath = db.Column(db.String(255), comment='업로드 이미지 경로')
-    createdAt = db.Column(db.DateTime, server_default=func.current_timestamp(), comment='작성일')
 
+    imagePath = db.Column(db.String(255), comment='업로드 이미지 경로')
+    imageData = db.Column(db.LargeBinary, comment='업로드 이미지 바이너리')
+    imageMimeType = db.Column(db.String(100), comment='이미지 MIME 타입')
+
+    createdAt = db.Column(db.DateTime, server_default=func.current_timestamp(), comment='작성일')
+    
 class Bookmark(db.Model):
     __tablename__ = 'bookmarks'
 

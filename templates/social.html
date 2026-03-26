@@ -14,6 +14,7 @@
         </div>
 
         <form action="{{ url_for('createSocialPost') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="formGroup">
             <label for="recipeID" class="formLabel">북마크한 레시피 선택</label>
             <select id="recipeID" name="recipeID" class="select" required>
@@ -93,9 +94,9 @@
               </div>
             </div>
 
-            {% if post.imagePath %}
+            {% if post.hasImage %}
               <div style="margin-bottom: 14px; border-radius: 16px; overflow: hidden;">
-                <img src="{{ post.imagePath }}" alt="{{ post.title }}">
+                <img src="{{ url_for('social.socialImage', postID=post.id) }}" alt="{{ post.title }}">
               </div>
             {% endif %}
 
