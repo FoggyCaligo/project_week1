@@ -43,6 +43,7 @@ class UserIngredient(db.Model):
     normalizedName = db.Column(db.String(255), comment='정규화된 재료명')
     expireDate = db.Column(db.Date, comment='유통기한')
     category = db.Column(db.String(32), nullable=True, comment='분류(채소/과일/육류 등)')
+    amounts = db.Column(db.Integer, nullable=False, server_default="1", comment="수량(단위/개수)")
     createdAt = db.Column(db.DateTime, server_default=func.current_timestamp(), comment='등록일')
 
     def to_dict(self):
@@ -93,6 +94,7 @@ class UserIngredient(db.Model):
             'normalized_name': self.normalizedName,
             'expire_date': self.expireDate.strftime('%Y-%m-%d') if self.expireDate else "",
             'days_left': days_left,
+            'amounts': int(self.amounts) if self.amounts is not None else 1,
             'created_at': self.createdAt.strftime('%Y-%m-%d %H:%M:%S') if self.createdAt else "",
             'image_url': matched_image,
             'category': category_normalized,

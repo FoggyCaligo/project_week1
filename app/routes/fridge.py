@@ -159,11 +159,97 @@ def infer_ingredient_category():
     q = (request.args.get('q') or '').strip()
     if not q:
         return jsonify({"ok": True, "category": "기타"}), 200
-    ok, err = FridgeService.validate_ingredient_name(q)
+    ok, err, norm = FridgeService.validate_ingredient_name(q)
     if not ok:
         return jsonify({"ok": False, "message": err}), 400
-    cat = FridgeService.infer_category_from_name(q)
+    cat = FridgeService.infer_category_from_name(norm)
     return jsonify({"ok": True, "category": cat}), 200
+
+
+@fridge_bp.route('/resolve-add', methods=['POST'])
+def resolve_add_items():
+    """
+    입력 재료명(콤마 구분)을 받아:
+    - 각 토큰을 정규화/검증
+    - foodRecipes.RCP_PARTS_DTLS에서 해당 재료가 '존재'하는지 확인
+    - 존재하는 것만 category를 추정해서 반환
+    """
+    data = request.get_json(silent=True) or request.form
+    q = (data.get("q") or "").strip()
+    tokens, err = FridgeService.parse_ingredient_list_for_query(q)
+    if err:
+        return jsonify({"ok": False, "message": err}), 400
+
+    found = []
+    not_found = []
+    for t in tokens:
+        matches = FridgeService.search_product_lines_from_recipes(t, max_results=1)
+        if matches:
+            found.append(
+                {
+                    "ingredient_name": t,
+                    "category": FridgeService.infer_category_from_name(t),
+                }
+            )
+        else:
+            not_found.append(t)
+
+    return jsonify({"ok": True, "items": found, "not_found": not_found}), 200
+
+
+@fridge_bp.route('/add-batch', methods=['POST'])
+def add_batch_fridge_items():
+    """여러 재료를 amounts와 함께 한 번에 추가합니다."""
+    current_user = AuthService.getCurrentUser()
+    if not current_user:
+        return jsonify({"ok": False, "message": "로그인이 필요합니다."}), 401
+
+    data = request.get_json(silent=True) or request.form
+    user_id = current_user.ID
+    expire_date_str = (data.get("expire_date") or "").strip()
+    expire_date_str = expire_date_str if expire_date_str else None
+
+    items = data.get("items") or []
+    if not isinstance(items, list) or not items:
+        return jsonify({"ok": False, "message": "추가할 재료 목록이 없습니다."}), 400
+
+    added = []
+    for it in items:
+        ing = (it.get("ingredient_name") or "").strip()
+        try:
+            amt_raw = it.get("amounts", None)
+            if amt_raw is None:
+                amt_raw = it.get("amount", None)
+            amt = int(amt_raw) if amt_raw is not None else 1
+        except (TypeError, ValueError):
+            amt = 1
+
+        ok, res = FridgeService.add_ingredient(
+            user_id,
+            ing,
+            expire_date_str=expire_date_str,
+            category=None,  # 추가와 동시에 자동 분류
+            amounts=amt,
+        )
+        if not ok:
+            return jsonify({"ok": False, "message": res}), 400
+        added.append(res.to_dict())
+
+    return jsonify({"ok": True, "added": added}), 201
+
+
+@fridge_bp.route("/search-products", methods=["GET"])
+def search_fridge_products():
+    """냉장고 재료 검색: foodRecipes.RCP_PARTS_DTLS에 언급된 실제 표기 수집(로그인 불필요)."""
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"ok": True, "rows": [], "source": "empty"}), 200
+    ok, err, norm = FridgeService.validate_ingredient_name(q)
+    if not ok:
+        return jsonify({"ok": False, "message": err}), 400
+    rows = FridgeService.search_product_lines_from_recipes(norm)
+    return jsonify({"ok": True, "ingredient_name": norm, "rows": rows, "source": "db"}), 200
+
 
 @fridge_bp.route('/<int:user_id>', methods=['GET'])
 def get_fridge_items(user_id):
@@ -270,9 +356,23 @@ def add_fridge_item():
     user_id = current_user.ID
     ingredient_name = (data.get('ingredient_name') or '').strip()
     expire_date_str = (data.get('expire_date') or '').strip()
+    expire_date_str = expire_date_str if expire_date_str else None
     category = data.get("category")
+    amounts_raw = data.get("amounts", None)
+    if amounts_raw is None:
+        amounts_raw = data.get("amount", None)
+    try:
+        amounts_i = int(amounts_raw) if amounts_raw is not None else 1
+    except (TypeError, ValueError):
+        amounts_i = 1
 
-    ok, result = FridgeService.add_ingredient(user_id, ingredient_name, expire_date_str, category)
+    ok, result = FridgeService.add_ingredient(
+        user_id,
+        ingredient_name,
+        expire_date_str=expire_date_str,
+        category=category,
+        amounts=amounts_i,
+    )
     
     if ok:
         return jsonify({"ok": True, "message": "추가 성공", "item": result.to_dict()}), 201
