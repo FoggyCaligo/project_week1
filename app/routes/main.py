@@ -5,6 +5,7 @@ from app.common import (
 )
 from app.services.authService import AuthService
 from app.services.apiService import ApiService
+from datetime import datetime, date
 
 main_bp = Blueprint("main", __name__)
 
@@ -17,7 +18,30 @@ def home():
     expiringIngredients = []
 
     if currentUser:
-        pass
+        from app.models.ingredient import UserIngredient
+        
+        # 1. 내 냉장고 전체 재료 개수 (userID 컬럼명 확인!)
+        all_items = UserIngredient.query.filter_by(userID=currentUser.ID).all()
+        summary["ingredientCount"] = len(all_items)
+
+        # 2. 유통기한 임박 재료 찾기 (오늘 기준 3일 이내)
+        today = date.today()
+        
+        # 전체 재료 중 유통기한이 임박한 것들만 필터링 (D-Day 계산)
+        for item in all_items:
+            # item.expireDate가 문자열이라면 datetime.strptime으로 변환이 필요할 수 있습니다.
+            # 만약 DB에 Date 타입으로 저장되어 있다면 바로 계산 가능합니다.
+            days_left = (item.expireDate - today).days
+            
+            if 0 <= days_left <= 3:
+                summary["expiringCount"] += 1
+                expiringIngredients.append({
+                    "ingredientName": item.ingredientName,
+                    "daysLeft": days_left
+                })
+        
+        # 3. 추천 레시피 개수 (이건 나중에 알고리즘 결과에 따라 넣으시면 됩니다)
+        summary["recommendCount"] = len(todayRecipes)
     return render_template("home.html", 
                            summary=summary, 
                            todayRecipes=todayRecipes, 
