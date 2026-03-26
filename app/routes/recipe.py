@@ -9,7 +9,7 @@ recipe_service = RecipeDetailService()
 def recipeDetailPage(recipeID: str):
     # 1. 로그인한 사용자 정보 가져오기 (재료 일치율 계산용)
     currentUser = AuthService.getCurrentUser()
-    userID = currentUser["ID"] if currentUser else None
+    userID = currentUser.ID if currentUser else None
     
     # 2. 서비스를 통해 레시피 데이터 조회 및 가공
     recipe = recipe_service.get_formatted_recipe(recipeID, user_id=userID)
