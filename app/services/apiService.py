@@ -38,10 +38,10 @@ class ApiService:
             refined_list = []
             for r in random_recipes:
                 refined_list.append({
-                    "RCP_SEQ": r.RCP_SEQ,          # 모델의 PK 필드명에 맞게 수정
-                    "RCP_NM": r.RCP_NM, # 모델 필드명 확인
-                    "ATT_FILE_NO_MAIN": r.ATT_FILE_NO_MAIN or "/static/images/default_recipe.jpg",
-                    "RCP_PAT2": r.RCP_PAT2,
+                    "RCP_SEQ": r.rcpSeq,          # 모델의 PK 필드명에 맞게 수정
+                    "RCP_NM": r.rcpNm, # 모델 필드명 확인
+                    "ATT_FILE_NO_MAIN": r.attFileNoMain or "/static/images/default_recipe.jpg",
+                    "RCP_PAT2": r.rcpPat2,
                     "matchPercent": 0
                 })
             return refined_list
@@ -105,7 +105,7 @@ class ApiService:
         """
         try:
             # 1. DB에서 최신순(혹은 ID 역순)으로 페이징 쿼리
-            pagination = Recipe.query.order_by(Recipe.RCP_SEQ.desc()).paginate(
+            pagination = Recipe.query.order_by(Recipe.rcpSeq.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
             
@@ -113,11 +113,11 @@ class ApiService:
             refined_recipes = []
             for r in pagination.items:
                 refined_recipes.append({
-                    "recipeID": r.RCP_SEQ,
-                    "recipeName": r.RCP_NM,
-                    "imageUrl": r.ATT_FILE_NO_MAIN or "/static/images/default_recipe.jpg",
-                    "category": r.RCP_PAT2 or "일반",
-                    "parts_dtls": r.RCP_PARTS_DTLS or "", # 전체 레시피 요약용
+                    "recipeID": r.rcpSeq,
+                    "recipeName": r.rcpNm,
+                    "imageUrl": r.attFileNoMain or "/static/images/default_recipe.jpg",
+                    "category": r.rcpPat2 or "일반",
+                    "parts_dtls": r.rcpPartsDtls or "", # 전체 레시피 요약용
                 })
             
             return refined_recipes, pagination
@@ -126,16 +126,16 @@ class ApiService:
             print(f"[DB Error] 전체 레시피 로드 실패: {e}")
             return [], None
     @staticmethod
-    def searchRecipesFromDB(keyword, page=1, per_page=12):
+    def searchRecipesFromDB(keyword, page=1, per_page=10):
         """
         [비회원/전체용] 우리 DB에서 재료명으로 레시피를 검색합니다.
         """
         try:
-            # 1. RCP_PARTS_DTLS(재료상세) 컬럼에 키워드가 포함된 것 찾기
+            # 1. rcpPartsDtls(재료상세) 컬럼에 키워드가 포함된 것 찾기
             search_term = f"%{keyword}%"
             pagination = Recipe.query.filter(
-                Recipe.RCP_PARTS_DTLS.like(search_term)
-            ).order_by(Recipe.RCP_SEQ.desc()).paginate(
+                Recipe.rcpPartsDtls.like(search_term)
+            ).order_by(Recipe.rcpSeq.desc()).paginate(
                 page=page, per_page=per_page, error_out=False
             )
 
@@ -143,11 +143,11 @@ class ApiService:
             refined_recipes = []
             for r in pagination.items:
                 refined_recipes.append({
-                    "recipeID": r.RCP_SEQ,
-                    "recipeName": r.RCP_NM,
-                    "imageUrl": r.ATT_FILE_NO_MAIN or "/static/images/default_recipe.jpg",
-                    "category": r.RCP_PAT2 or "일반",
-                    "parts_dtls": r.RCP_PARTS_DTLS or "", # 재료 미리보기용
+                    "recipeID": r.rcpSeq,
+                    "recipeName": r.rcpNm,
+                    "imageUrl": r.attFileNoMain or "/static/images/default_recipe.jpg",
+                    "category": r.rcpPat2 or "일반",
+                    "parts_dtls": r.rcpPartsDtls or "", # 재료 미리보기용
                     "cookTime": 20
                 })
             
