@@ -1194,7 +1194,7 @@
             try {
                 const res = await fetch('/api/fridge/recipes');
                 const data = await res.json();
-                
+                console.error(data)
                 if (res.ok && data.recipes && data.recipes.length > 0) {
                     list.innerHTML = '';
                     
@@ -1204,9 +1204,9 @@
                         a.style = "text-decoration: none; color: inherit;";
                         a.innerHTML = `
                             <div class="card" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; height: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadowMedium)';" onmouseout="this.style.transform='none'; this.style.boxShadow='var(--shadowSoft)';">
-                                <img src="${recipe.imageUrl}" alt="${recipe.recipeName}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
+                                <img src="${recipe.ATT_FILE_NO_MAIN}" alt="${recipe.RCP_NM}" style="width: 100%; height: 160px; object-fit: cover; border-top-left-radius: var(--radiusLg); border-top-right-radius: var(--radiusLg);">
                                 <div class="cardBody" style="padding: 16px; flex: 1;">
-                                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">${recipe.recipeName}</h3>
+                                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--colorText);">${recipe.RCP_NM}</h3>
                                     <p style="margin: 0; font-size: 13px; color: var(--colorTextSub); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${recipe.description}</p>
                                 </div>
                             </div>

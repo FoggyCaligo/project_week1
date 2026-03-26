@@ -117,29 +117,52 @@
   <div class="container">
     <div class="sectionHeader">
       <h2 class="sectionTitle">{% if currentUser %}맞춤 추천 요리{% else %}인기 레시피{% endif %}</h2>
-      <a href="{{ url_for('main.recommendPage') }}" class="btn btnGhost">전체 보기</a>
+      <a href="{{ url_for('main.allRecipesPage') }}" class="btn btnGhost">전체 보기</a>
     </div>
     <div class="grid3">
-      {% for recipe in todayRecipes %}
-      <article class="card recipeCard">
-        <div class="recipeThumb"><img src="{{ recipe.ATT_FILE_NO_MAIN }}" alt="{{ recipe.RCP_NM }}"></div>
-        <div class="recipeInfo">
-          <h3 class="recipeTitle">{{ recipe.RCP_NM }}</h3>
-          <h5 class="recipePat">{{recipe.RCP_PAT2}}</h5>
-          <div class="recipeMeta">
-            {% if currentUser %}
-            <span class="tag tagSuccess">일치율 {{ recipe.matchPercent }}%</span>
-            {% else %}
-            <span class="tag">약 {{ recipe.cookTime }}분 소요</span>
-            {% endif %}
-          </div>
-          <div class="recipeActions">
-            <a href="{{ url_for('recipe.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary" style="width: 100%;">상세보기</a>
-          </div>
-        </div>
-      </article>
-      {% endfor %}
+  {% for recipe in todayRecipes %}
+  <article class="card recipeCard">
+    <div class="recipeThumb">
+      <img src="{{ recipe.ATT_FILE_NO_MAIN }}" alt="{{ recipe.RCP_NM }}">
     </div>
+
+    <div class="recipeInfo">
+  <h2 class="recipeTitle">{{ recipe.RCP_NM }}</h2>
+
+  <div class="recipeMeta" style="display: flex; gap: 8px; margin-bottom: 10px;">
+      {% if currentUser %}
+        {# 🎯 회원일 때만 부족 재료 개수 표시 #}
+        {% if recipe.missingIngredients|length == 0 %}
+          <span class="tag tagSuccess">지금 바로 요리 가능!</span>
+        {% else %}
+          <span class="tag tagWarning">부족 재료 {{ recipe.missingIngredients|length }}개</span>
+        {% endif %}
+      {% else %}
+        {# 🎯 비회원일 때는 카테고리(국, 반찬 등)를 더 강조 #}
+        <span class="tag tagPrimary">{{ recipe.description.split('|')[1] if '|' in recipe.description else '레시피' }}</span>
+        <span class="tag">{{ recipe.description.split('|')[0] if '|' in recipe.description else '일반' }}</span>
+      {% endif %}
+    </div>
+
+    {% if currentUser %}
+      {# 🎯 회원일 때만 보유 재료 요약 표시 #}
+      <p class="recipeDesc" style="font-size: 0.85rem; color: #666;">
+        <strong>보유:</strong> {{ recipe.haveIngredients[:2]|join(', ') }}{% if recipe.haveIngredients|length > 2 %} 외 {{ recipe.haveIngredients|length - 2 }}개{% endif %}
+      </p>
+    {% else %}
+      {# 🎯 비회원일 때는 간단한 설명이나 문구 표시 #}
+      <p class="recipeDesc" style="font-size: 0.85rem; color: #666;">
+        로그인하시면 내 냉장고 재료와 매칭해드려요!
+      </p>
+    {% endif %}
+
+    <div class="recipeActions" style="margin-top: 15px;">
+      <a href="{{ url_for('recipe.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary btnFull">레시피 보기</a>
+    </div>
+  </div>
+  </article>
+  {% endfor %}
+</div>
   </div>
 </section>
 {% endblock %}
