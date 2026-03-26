@@ -2,6 +2,7 @@ from flask import Flask, url_for as flask_url_for
 from database import init_database
 from pathlib import Path
 
+
 def create_app():
     app = Flask(
         __name__,
@@ -21,6 +22,7 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.fridge_views import fridge_views_bp
     from app.routes.fridge import fridge_bp
+    from app.routes.payment_toss import payment_toss_bp
     from app.routes.bookmarks import bookmarks_bp
     from app.routes.social import social_bp
     from app.routes.recipe import recipe_bp
@@ -29,12 +31,14 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(fridge_views_bp)
     app.register_blueprint(fridge_bp)
+    app.register_blueprint(payment_toss_bp)
     app.register_blueprint(bookmarks_bp)
     app.register_blueprint(social_bp)
     app.register_blueprint(recipe_bp)
 
     # 화면 우측 상단에 유저 닉네임을 띄우기 위한 컨텍스트 주입
     from app.services.authService import AuthService
+
     @app.context_processor
     def injectCommonData():
         return {"currentUser": AuthService.getCurrentUser()}
@@ -47,22 +51,20 @@ def create_app():
                 "loginPage": "auth.loginPage",
                 "signupPage": "auth.signupPage",
                 "logout": "auth.logout",
-
                 "home": "main.home",
                 "searchPage": "main.searchPage",
                 "recommendPage": "main.recommendPage",
                 "recipeDetailPage": "recipe.recipeDetailPage",
-
                 "addBookmark": "bookmarks.addBookmark",
                 "bookmarksPage": "bookmarks.bookmarksPage",
                 "removeBookmark": "bookmarks.removeBookmark",
-
                 "socialPage": "social.socialPage",
                 "createSocialPost": "social.createSocialPost",
             }
             if endpoint in mapping:
                 endpoint = mapping[endpoint]
             return flask_url_for(endpoint, **values)
+
         return dict(url_for=custom_url_for)
 
     return app

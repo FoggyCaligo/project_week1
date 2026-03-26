@@ -1,6 +1,13 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
+
+# 프로젝트 루트의 .env만 사용 (실행 cwd가 app/ 등이어도 동일하게 로드).
+# Windows 등에서 빈 TOSS_*가 사용자 환경에만 있으면 기본 load_dotenv는 .env를 무시하므로 override=True.
+_ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(_ENV_PATH, override=True)
 
 # 1. DB 객체 생성
 db = SQLAlchemy()
@@ -9,9 +16,7 @@ def init_database(app):
     """
     Flask 앱 객체를 받아 DB 설정, 연동, 테이블 생성을 한 번에 처리합니다.
     """
-    # 2. 환경 변수 로드 (.env 파일 참조)
-    load_dotenv()
-    
+    # 환경 변수는 모듈 임포트 시 위에서 이미 로드됨.
     # 하드코딩된 기본값(fallback)을 모두 제거하고 순수하게 환경변수만 가져옵니다.
     db_user = os.getenv('DB_USER')
     db_password = os.getenv('DB_PASSWORD')
