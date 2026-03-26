@@ -44,18 +44,26 @@ def searchPage():
                            pagination=pagination, # 페이징 객체도 넘겨줘야 함
                            keyword=raw_query,
                            is_search=True)
-# [회원 전용] 검색/접속 -> 추천 레시피 페이지(recommend.html)로 안내
 @main_bp.route("/recipes/recommend")
 def recommendPage():
     currentUser, redirectResponse = AuthService.requireLogin()
     if redirectResponse: return redirectResponse
 
     raw_query = request.args.get("q", "").strip()
+    page = request.args.get('page', 1, type=int)
     
-    recipes = ApiService.getRandomRecommendations(12) 
+    if raw_query:
+        # 회원이 검색어를 입력했다면 API에서 가져오기
+        recipes, total_pages = ApiService.searchRecipesFromAPI(raw_query, page=page)
+    else:
+        # 검색어가 없다면 기존처럼 랜덤 추천 (혹은 빈 리스트)
+        recipes = ApiService.getRandomRecommendations(12)
+        total_pages = 1
 
     return render_template("recommend.html", 
                            recipes=recipes, 
+                           total_pages=total_pages,
+                           current_page=page,
                            keyword=raw_query)
 @main_bp.route("/recipes")
 def allRecipesPage():

@@ -53,13 +53,16 @@ class ApiService:
     BASE_URL = f"http://openapi.foodsafetykorea.go.kr/api/{API_KEY}/COOKRCP01/json"
 
     @staticmethod
-    def searchRecipesFromAPI(keyword, start=1, end=10):
+    def searchRecipesFromAPI(keyword, page=1):
         """
         [공공데이터 API 전용] 재료명으로 외부 레시피를 검색합니다.
         """
         if not keyword:
-            return []
+            return [], 0
 
+        start = (page - 1) * 10 + 1
+        end = page * 10
+        
         # API 요청 URL 조립 (RCP_PARTS_DTLS 파라미터에 검색어 전달)
         # 형식: /시작/종료/RCP_NM=이름&RCP_PARTS_DTLS=재료
         url = f"{ApiService.BASE_URL}/{start}/{end}/RCP_PARTS_DTLS={keyword}"
@@ -71,9 +74,12 @@ class ApiService:
             # 데이터가 없을 경우 처리
             if "COOKRCP01" not in data or data["COOKRCP01"]["total_count"] == "0":
                 print(f"[{keyword}] 검색 결과가 없습니다.")
-                return []
+                return [], 0
 
-            rows = data["COOKRCP01"]["row"]
+            total_count = int(data["COOKRCP01"]["total_count"])
+            total_pages = (total_count + 9) // 10 # 10개씩 나눌 때 올림 처리
+            
+            rows = data["COOKRCP01"].get("row", [])            
             refined_list = []
             
             for r in rows:
@@ -85,7 +91,7 @@ class ApiService:
                     "cookTime": 20,                        # API에 없으니 기본값
                     "matchPercent": 100 if keyword in r.get("RCP_PARTS_DTLS", "") else 0
                 })
-            return refined_list
+            return refined_list, total_pages
 
         except Exception as e:
             print(f"[API Search Error]: {e}")

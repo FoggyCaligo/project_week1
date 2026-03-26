@@ -11,9 +11,10 @@
       </div>
     </div>
 
+    {# --- 정렬 필터 --- #}
     <section class="card section">
       <div class="cardBody">
-        <form action="{{ url_for('recommendPage') }}" method="get" class="formRow">
+        <form action="{{ url_for('main.recommendPage') }}" method="get" class="formRow">
           <div class="formGroup">
             <label for="sort" class="formLabel">정렬</label>
             <select name="sort" id="sort" class="select">
@@ -22,6 +23,8 @@
               <option value="cookTime">조리 시간 짧은 순</option>
             </select>
           </div>
+          {# 검색어 유지용 히든 필드 #}
+          <input type="hidden" name="q" value="{{ keyword }}">
 
           <div class="formGroup" style="align-self:end;">
             <button type="submit" class="btn btnPrimary">적용</button>
@@ -30,20 +33,20 @@
       </div>
     </section>
 
+    {# --- 레시피 목록 --- #}
     <div class="grid3">
       {% for recipe in recipes %}
       <article class="card recipeCard">
         <div class="recipeThumb">
-          <img src="{{ recipe.imageUrl }}" alt="{{ recipe.recipeName }}">
+          <img src="{{ recipe.ATT_FILE_NO_MAIN }}" alt="{{ recipe.RCP_NM }}">
         </div>
 
         <div class="recipeInfo">
-          <h2 class="recipeTitle">{{ recipe.recipeName }}</h2>
+          <h2 class="recipeTitle">{{ recipe.RCP_NM }}</h2>
 
           <div class="recipeMeta">
             <span class="tag tagSuccess">일치율 {{ recipe.matchPercent }}%</span>
-            <span class="tag">조리 {{ recipe.cookTime }}분</span>
-            <span class="tag">부족 {{ recipe.missingIngredients|length }}개</span>
+            <span class="tag">부족 {{ recipe.missingIngredients|length if recipe.missingIngredients else 0 }}개</span>
           </div>
 
           <div class="progressBar">
@@ -55,6 +58,8 @@
             <div class="tagList">
               {% for ingredient in recipe.haveIngredients %}
                 <span class="tag tagSuccess">{{ ingredient }}</span>
+              {% else %}
+                <span class="tag">확인 중...</span>
               {% endfor %}
             </div>
           </div>
@@ -71,19 +76,43 @@
           </div>
 
           <div class="recipeActions">
-            <a href="{{ url_for('recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
-            <a href="{{ recipe.shoppingUrl }}" class="btn btnGhost" target="_blank">부족 재료 구매</a>
-
-            <form action="{{ url_for('addBookmark', recipeID=recipe.recipeID) }}" method="post">
+            <a href="{{ url_for('main.recipeDetailPage', recipeID=recipe.recipeID) }}" class="btn btnPrimary">상세 보기</a>
+            <form action="{{ url_for('main.addBookmark', recipeID=recipe.recipeID) }}" method="post" style="display:inline;">
               <button type="submit" class="btn btnSecondary">북마크</button>
             </form>
           </div>
         </div>
       </article>
       {% else %}
-      <div class="card emptyState">추천 가능한 레시피가 없습니다.</div>
+      <div class="card emptyState" style="grid-column: span 3; text-align: center; padding: 50px;">
+        추천 가능한 레시피가 없습니다.
+      </div>
       {% endfor %}
     </div>
+
+    {# --- 페이징 버튼 (목록 밖으로 이동) --- #}
+    {% if total_pages > 1 %}
+    <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 40px; padding-bottom: 40px;">
+      
+      {% if current_page > 1 %}
+        <a href="{{ url_for('main.recommendPage', q=keyword, page=current_page-1) }}" class="btn btnGhost">이전</a>
+      {% else %}
+        <span class="btn btnGhost" style="visibility: hidden;">이전</span>
+      {% endif %}
+
+      <span class="pageInfo">
+        <strong>{{ current_page }}</strong> / {{ total_pages }} 페이지
+      </span>
+
+      {% if current_page < total_pages %}
+        <a href="{{ url_for('main.recommendPage', q=keyword, page=current_page+1) }}" class="btn btnGhost">다음</a>
+      {% else %}
+        <span class="btn btnGhost" style="visibility: hidden;">다음</span>
+      {% endif %}
+
+    </div>
+    {% endif %}
+
   </div>
 </section>
 {% endblock %}
