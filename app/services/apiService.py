@@ -24,7 +24,7 @@
 import random
 import requests
 from app.models.recipe import Recipe
-from sqlalchemy import func
+from sqlalchemy import func, cast, Float
 
 class ApiService:
     
@@ -112,10 +112,10 @@ class ApiService:
             if sort == 'name':
                 # 이름 가나다순 (오름차순)
                 order_criteria = Recipe.rcpNm.asc()
-            elif sort == 'cookTime':
+            elif sort == 'low_cal':
                 # 데이터에 cookTime이 없으니 칼로리(infoEng) 낮은 순으로 센스 있게!
                 # (만약 진짜 조리시간 컬럼이 있다면 그걸 쓰시면 됩니다)
-                order_criteria = Recipe.infoEng.asc() 
+                order_criteria = cast(Recipe.infoEng,Float).asc()
             else:
                 # 기본값: 최신순 (ID 역순)
                 order_criteria = Recipe.rcpSeq.desc()
@@ -159,7 +159,7 @@ class ApiService:
             if sort == 'name':
                 order_criteria = Recipe.rcpNm.asc()
             elif sort == 'low_cal':
-                order_criteria = Recipe.infoFat.asc() # 칼로리 낮은 순 등으로 대체
+                order_criteria = Recipe.infoEng.asc() # 칼로리 낮은 순 등으로 대체
             else:
                 order_criteria = Recipe.rcpSeq.desc() # 최신순
             pagination = query.order_by(order_criteria).paginate(
