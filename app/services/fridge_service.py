@@ -728,103 +728,108 @@ class FridgeService:
     @staticmethod
     def get_recommended_recipes(user_id):
         EXCLUDE_INGREDIENTS = {
-            # 1. 시스템 단어 (가장 킹받는 부분)
             "기준", "재료", "주재료", "부재료", "양념", "소스", "고명", "선택", "준비", "약간",
             "인분", "인분기준", "내용물", "함량", "구성", "추가", "가정간편식",
-            
-            # 2. 양념/가루/기본 재료 (사러 갈 필요 없는 것들)
-            "소금", "설탕", "후추", "후춧가루", "고춧가루", "밀가루", "녹말가루", "전분", 
-            "식용유", "참기름", "들기름", "올리브유", "간장", "진간장", "국간장", "저염간장", 
+            "소금", "설탕", "후추", "후춧가루", "고춧가루", "밀가루", "녹말가루", "전분",
+            "식용유", "참기름", "들기름", "올리브유", "간장", "진간장", "국간장", "저염간장",
             "다진마늘", "마늘", "생강", "맛술", "청주", "물", "육수", "통깨", "깨",
             "올리고당", "물엿", "식초", "케찹", "마요네즈", "고추장", "된장"
         }
-        """유통기한 임박 재료 기반 + 별칭 매칭 추천 로직"""
+        """유통기한 임박 재료를 기준으로 DB(foodRecipes)에서 후보를 찾고 일치율을 계산합니다."""
         try:
-            # 1. 내 냉장고 재료 가져오기 (컬럼명 userID, ingredientName 확인!)
+            from sqlalchemy import or_
+            from app.models.recipe import Recipe
+
             all_user_items = UserIngredient.query.filter_by(userID=user_id).all()
-            
-            # 🎯 중요: FridgeService 내부의 메서드를 호출해야 함 (ApiService X)
-            owned_standard_set = {FridgeService.get_standard_name(item.ingredientName) for item in all_user_items}
+            owned_standard_set = {
+                FridgeService.get_standard_name(item.ingredientName)
+                for item in all_user_items
+                if item.ingredientName
+            }
             print(f"🔎 내 냉장고 표준화 재료: {owned_standard_set}")
-            
+
             if not owned_standard_set:
                 return []
-            
-            # 2. 유통기한 임박 재료 2개 추출
-            urgent_items = UserIngredient.query.filter_by(userID=user_id)\
-                .order_by(UserIngredient.expireDate.asc()).all()
-            
+
+            urgent_items = (
+                UserIngredient.query.filter_by(userID=user_id)
+                .order_by(UserIngredient.expireDate.asc(), UserIngredient.ID.asc())
+                .all()
+            )
+
             search_keywords = []
             for item in urgent_items:
                 std_name = FridgeService.get_standard_name(item.ingredientName)
-                if std_name not in search_keywords:
+                if std_name and std_name not in search_keywords:
                     search_keywords.append(std_name)
-                if len(search_keywords) >= 3: break
-            
-            search_query = ",".join(search_keywords)
-            print(f"🚀 최종 API 검색 키워드: {search_query}")
+                if len(search_keywords) >= 3:
+                    break
 
-            # 3. 공공 API 호출
-            api_key = "3601fcadc33549809411"
-            url = f"https://openapi.foodsafetykorea.go.kr/api/{api_key}/COOKRCP01/json/1/10/RCP_PARTS_DTLS={search_query}"
-            
-            response = requests.get(url, timeout=5)
-            data = response.json()
-            
+            if not search_keywords:
+                return []
+
+            like_filters = []
+            for keyword in search_keywords:
+                for term in _equivalent_search_terms(keyword):
+                    esc = term.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+                    like_filters.append(Recipe.rcpPartsDtls.like(f"%{esc}%", escape='\\'))
+
+            candidate_query = Recipe.query.filter(
+                Recipe.rcpPartsDtls.isnot(None),
+                Recipe.rcpPartsDtls != "",
+            )
+            if like_filters:
+                candidate_query = candidate_query.filter(or_(*like_filters))
+
+            candidates = candidate_query.order_by(Recipe.rcpSeq.desc()).limit(80).all()
+            print(f"🔎 추천 후보 레시피 수(DB): {len(candidates)}")
+
             recommended = []
-            if "COOKRCP01" in data and "row" in data["COOKRCP01"]:
-                for r in data["COOKRCP01"]["row"]:
-                    raw_parts = r.get("RCP_PARTS_DTLS", "")
-                    
-                    # 🎯 [중요] 괄호와 노이즈를 먼저 제거 (아까 말씀드린 순서!)
-                    cleaned_full_text = FridgeService.clean_ingredient_name(raw_parts)
-                    
-                    # 🎯 [중요] 공백이나 콤마 등으로 쪼개기
-                    parts_list = re.split(r'[,\s]+', cleaned_full_text)
-                    
-                    have_ingr = []
-                    missing_ingr = []
-                    
-                    for p in parts_list:
-                        p_clean = p.strip()
-                        # 글자 수가 1글자이거나(예: '중', '대'), 필터링 리스트에 있으면 제외
-                        if not p_clean or len(p_clean) < 2 or p_clean in EXCLUDE_INGREDIENTS: 
-                            continue
-                        
-                        recipe_std_name = FridgeService.get_standard_name(p_clean)
-                        
-                        # 표준명으로 변환 후에도 필터링 리스트에 있는지 한 번 더 체크
-                        if recipe_std_name in EXCLUDE_INGREDIENTS:
-                            continue
+            for recipe in candidates:
+                raw_parts = recipe.rcpPartsDtls or ""
+                cleaned_full_text = FridgeService.clean_ingredient_name(raw_parts)
+                parts_list = re.split(r'[,\s]+', cleaned_full_text)
 
-                        if recipe_std_name in owned_standard_set:
-                            if p_clean not in have_ingr:
-                                have_ingr.append(p_clean)
-                        else:
-                            # 🎯 부족 재료 목록에 넣기 전 최종 검사
-                            if p_clean not in missing_ingr:
-                                missing_ingr.append(p_clean)
+                have_ingr = []
+                missing_ingr = []
 
-                    total = len(have_ingr) + len(missing_ingr)
-                    match_percent = int((len(have_ingr) / total) * 100) if total > 0 else 0
+                for p in parts_list:
+                    p_clean = p.strip()
+                    if not p_clean or len(p_clean) < 2 or p_clean in EXCLUDE_INGREDIENTS:
+                        continue
 
-                    # 🎯 HTML(recommend.html)의 변수명과 100% 일치시켜야 함
-                    recommended.append({
-                        "recipeID": r.get("RCP_SEQ"),
-                        "RCP_NM": r.get("RCP_NM"),
-                        "ATT_FILE_NO_MAIN": r.get("ATT_FILE_NO_MAIN") or "/static/images/default_recipe.jpg",
-                        "description": f"{r.get('RCP_WAY2')} | {r.get('RCP_PAT2')}",
-                        "haveIngredients": have_ingr,
-                        "missingIngredients": missing_ingr,
-                        "matchPercent": match_percent
-                    })
-                recommended.sort(key=lambda x: (len(x['missingIngredients']), -x['matchPercent']))
-                print(f"✅ 추천 레시피 {len(recommended)}개 추출 성공")
-                return recommended
-            
-            print("❌ API에서 가져온 레시피 데이터가 없습니다.")
-            return []
+                    recipe_std_name = FridgeService.get_standard_name(p_clean)
+                    if recipe_std_name in EXCLUDE_INGREDIENTS:
+                        continue
+
+                    if recipe_std_name in owned_standard_set:
+                        if p_clean not in have_ingr:
+                            have_ingr.append(p_clean)
+                    else:
+                        if p_clean not in missing_ingr:
+                            missing_ingr.append(p_clean)
+
+                total = len(have_ingr) + len(missing_ingr)
+                if total <= 0:
+                    continue
+
+                match_percent = int((len(have_ingr) / total) * 100)
+                recommended.append({
+                    "recipeID": recipe.rcpSeq,
+                    "RCP_NM": recipe.rcpNm,
+                    "recipeName": recipe.rcpNm,
+                    "ATT_FILE_NO_MAIN": recipe.attFileNoMain or "/static/images/default_recipe.jpg",
+                    "imageUrl": recipe.attFileNoMain or "/static/images/default_recipe.jpg",
+                    "description": f"{recipe.rcpWay2 or '기타'} | {recipe.rcpPat2 or '요리'}",
+                    "haveIngredients": have_ingr,
+                    "missingIngredients": missing_ingr,
+                    "matchPercent": match_percent,
+                })
+
+            recommended.sort(key=lambda x: (len(x['missingIngredients']), -x['matchPercent'], x['recipeName']))
+            print(f"✅ 추천 레시피 {len(recommended)}개 추출 성공(DB)")
+            return recommended
 
         except Exception as e:
-            print(f"🚨 [Recommend Logic Error] {e}")
+            print(f"🚨 [Recommend Logic Error - DB] {e}")
             return []
