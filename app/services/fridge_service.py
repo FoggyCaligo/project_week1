@@ -180,14 +180,6 @@ _NONFOOD_NAME_FRAGMENTS = frozenset({
     "아파트", "건물", "학교", "회사",
 })
 
-# 분류 키워드에 없이 자주 쓰이는 식재료(부분 일치 허용)
-_EXTRA_FOOD_SUBSTRINGS = frozenset({
-    "계란", "달걀", "쌀", "밀가루", "찹쌀", "현미", "들기름", "참기름",
-    "식초", "물엿", "올리고당", "꿀", "잼", "떡", "당면", "국수", "소면", "중면",
-    "미숫가루", "녹두", "팥", "완두", "옥수수", "들깨", "깨",
-    "carrot", "onion", "garlic", "egg", "milk", "beef", "pork", "chicken",
-})
-
 # normalizedName 표준화 규칙
 _NORMALIZE_KEYWORD_RULES = (
     ("게", ["꽃게", "대게", "홍게", "털게", "참게", "방게", "게"]),
@@ -214,6 +206,8 @@ _NORMALIZE_KEYWORD_RULES = (
     ("떡", ["가래떡", "떡국떡", "인절미", "백설기", "찹쌀떡", "떡"]),
     ("계란", ["달걀", "메추리알", "유정란", "반숙란", "삶은계란", "계란"]),
     ("식초", ["양조식초", "사과식초", "발사믹식초", "현미식초", "식초"]),
+    ("올리브유", ["올리브오일", "올리브유"]),
+    ("식용유", ["식용유", "오일"]),
     ("설탕", ["백설탕", "흑설탕", "황설탕", "슈가파우더", "시럽", "설탕"]),
     ("시럽", ["메이플시럽", "아가베시럽", "초코시럽", "카라멜시럽", "시럽"]),
     ("카레", ["고형카레", "카레가루", "인도카레", "버터치킨카레", "카레"]),
@@ -228,32 +222,10 @@ _NORMALIZE_KEYWORD_RULES = (
 )
 
 
-def _all_food_substrings():
-    s = set()
-    for _, keys in _CATEGORY_KEYWORD_RULES:
-        s.update(keys)
-    s.update(_EXTRA_FOOD_SUBSTRINGS)
-    for canon, keys in _NORMALIZE_KEYWORD_RULES:
-        s.add(canon)
-        s.update(keys)
-    return frozenset(s)
-
-
-_ALL_FOOD_SUBSTRINGS = _all_food_substrings()
-
-
 def _name_contains_nonfood_fragment(name: str) -> bool:
     compact = re.sub(r"\s+", "", name)
     for frag in sorted(_NONFOOD_NAME_FRAGMENTS, key=len, reverse=True):
         if frag in compact:
-            return True
-    return False
-
-
-def _name_matches_known_food(name: str) -> bool:
-    nl = name.casefold()
-    for kw in sorted(_ALL_FOOD_SUBSTRINGS, key=len, reverse=True):
-        if kw.casefold() in nl:
             return True
     return False
 
@@ -348,8 +320,6 @@ class FridgeService:
         if not re.search(r"[\uAC00-\uD7A3a-zA-Z]", name):
             return False, "재료명에 글자(한글 또는 영문)를 포함해주세요."
         if _name_contains_nonfood_fragment(name):
-            return False, "올바른 재료명을 입력하세요"
-        if not _name_matches_known_food(name):
             return False, "올바른 재료명을 입력하세요"
         return True, ""
 
